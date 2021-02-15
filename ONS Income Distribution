@@ -1,0 +1,92 @@
+##Source: https://www.ons.gov.uk/peoplepopulationandcommunity/personalandhouseholdfinances/incomeandwealth/bulletins/householddisposableincomeandinequality/financialyear2020
+
+### Cleaning Data
+> UKIncome<-read.csv("Inc_UK.csv")
+> UKIncome$Freq<-round(UKIncome$Freq*1000)
+
+### Trimmed ONS Data
+UKIncomeTrim<-filter(UKIncome,Var1<80000&Var1>1)
+
+#ONS png image is trimmed >0 & <80000
+#This gives 62,345,112 individuals
+#62,345,112 (Trim) / 65,712,616 (total) 
+#= 62345112 /65712616 =94.87% population
+
+##### This looks like a one-tailed test at P=0.05
+
+################################ ################################ 
+REPLICATING ONS METHOD
+################################ ################################ 
+
+#Create Cumulative Frequency in data.frame
+UKIncomeTrim$Cum_Freq<-cumsum(UKIncomeTrim$Freq)
+
+##Define breaks for Trim
+break_points <- c(1:10)*(Break<-max(UKIncomeTrim$Cum_Freq)/10) 
+#> break_points
+#6234511 12469022 18703534 24938045 31172556 37407067 43641578 49876090 56110601 62345112
+
+##Define bins based on break_points
+quantiles2 <- sapply(UKIncomeTrim$Cum_Freq, function(x) break_points[which.min(abs(x - break_points))])
+##Mapping quantiles2 to data.frame
+UKIncomeTrim$ONSDecile<-quantiles2
+
+##Find position of quantiles2
+break_point_pos<-c(which(UKIncomeTrim$ONSDecile[-1] != UKIncomeTrim$ONSDecile[-length(UKIncomeTrim$ONSDecile)]),length(UKIncomeTrim$ONSDecile))
+
+## Mapping break_point_pos to data.frame
+for(i in 1:length(UKIncomeTrim$ONSDecile))
+{
+	if(isTRUE(i>break_point_pos[counter]))
+	{counter<-counter+1
+	report[i]<-UKIncomeTrim[break_point_pos[counter],"Var1"]}
+	else
+	{report[i]<-UKIncomeTrim[break_point_pos[counter],"Var1"]}
+}
+report ##check report
+
+UKIncomeTrim$DecileVar1<-report
+
+##Set values to allow painting inside-out (1,2,3,4,5,6,4,3,2,1)
+for(i in 1:length(UKIncomeTrim$ONSDecile))
+{
+	if(isTRUE(i>break_point_pos[counter]))
+	{counter<-counter+1
+	fill[i]<-UKIncomeTrim[fill_points[counter],"Var1"]}
+	else
+	{fill[i]<-UKIncomeTrim[fill_points[counter],"Var1"]}
+
+report ##check report
+
+UKIncomeTrim$ONSFill<-report
+    
+################################ ################################ 
+GGPlot of Data
+################################ ################################ 
+
+ggplot(UKIncomeTrim, aes(x=Var1, y = Freq, fill = ONSFill))+
+### width on x-axis 1,000
+geom_histogram(stat='identity',width=1000)+
+### limits moved to 3,000,000 
+scale_y_continuous(limits=c(0,3100000))+
+scale_x_continuous(labels=scales::dollar_format(prefix="£"))+
+labs(x="Equivilised household income of individuals (in £1,000 bands)")+
+annotate("text", x=5000, y=3100000, label= "Number of individuals",size=2.75)+
+ONStheme
+
+################################ ################################ 
+ONS Theme
+################################ ################################ 
+
+ONStheme<-theme(
+text=element_text(size=9),
+panel.grid.major.x = element_blank(),
+panel.grid.minor.x = element_blank(),
+axis.title.x=element_text(size=8),
+axis.title.y=element_blank(),
+panel.grid.major.y = element_line(colour="grey85"),
+panel.background = element_rect(fill = "white"),
+legend.position="none")
+
+################################ ################################ 
+################################ ################################ 
