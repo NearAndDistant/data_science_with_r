@@ -1,0 +1,123 @@
+###############################################
+Challenge 1 - DuBoisGeorgia [18/02/2021]
+###############################################
+
+library(tidyverse)
+library(ggplot2)
+library(extrafonts)
+library(pBrackets)
+library(reshape)
+
+### Download the csv dataset from GitHub
+DuBoisGeorgia<-
+read.csv(
+url("https://raw.githubusercontent.com/ajstarks/dubois-data-portraits/master/challenge/challenge01/data.csv")
+)
+################## The Data ###################
+
+> DuBoisGeorgia
+   Year Colored White
+1  1790       0     0
+2  1800     100    90
+3  1810      78    46
+4  1820      42    30
+5  1830      45    55
+6  1840      30    34
+7  1850      35    31
+8  1860      20    16
+9  1870      22    11
+10 1880      36    34
+11 1890      21    20
+
+#Target plot: https://github.com/ajstarks/dubois-data-portraits/blob/master/challenge/challenge01/original-plate-07.jpg
+
+################## The Wrangle ################
+
+Georgia<-melt(DuBoisGeorgia,idvars=Year,measure.vars=c("Colored","White"))
+
+names(Georgia)[2]<-"Race"
+Georgia$Race<-as.factor(Georgia$Race)
+
+   Year variable value
+1  1790  Colored     0
+2  1800  Colored   100
+3  1810  Colored    78
+4  1820  Colored    42
+5  1830  Colored    45
+6  1840  Colored    30
+7  1850  Colored    35
+8  1860  Colored    20
+9  1870  Colored    22
+10 1880  Colored    36
+11 1890  Colored    21
+12 1790    White     0
+13 1800    White    90
+14 1810    White    46
+15 1820    White    30
+16 1830    White    55
+17 1840    White    34
+18 1850    White    31
+19 1860    White    16
+20 1870    White    11
+21 1880    White    34
+22 1890    White    20
+
+################## The ggplot ################# 
+
+DuBois_Georgia_Plate<-
+ggplot(Georgia,aes(x=Year,y=value,linetype=Race))+
+geom_line()+
+scale_linetype_manual(values=c("solid","dashed"),
+			    labels=c("=COLORED","=WHITE"))+
+coord_flip()+
+scale_x_continuous(breaks=seq(1790,1890,10),expand=c(0,0))+
+scale_y_continuous(breaks=seq(0,100,5),trans="reverse",expand=c(0,0))+
+expand_limits(y=100,x=1790)+
+ggtitle(
+"COMPARATIVE INCREASE OF WHITE AND COLORED \n POPULATION OF GEORGIA.")+
+labs(y="PERCENTS",
+caption=
+"| Web: NearAndDistant.com \n| Twitter: @NearAndDistant \n| Git:  NearAndDistant                      ")+
+GeorgiaTheme
+
+################## The Theme ################## 
+GeorgiaTheme<-
+theme(
+########################################## Axis
+axis.title.y=element_blank(),
+axis.title.x=element_text(color="grey60",family="Bahnschrift",size=5,hjust=.45,vjust=-10),
+axis.ticks=element_blank(),
+axis.text.x=element_text(color="grey60",family="Bahnschrift", size=6,vjust=4),
+axis.text.y=element_text(color="grey60",family="Bahnschrift", size=8,hjust=-0.75),
+########################################## Gridlines
+panel.grid.minor.y=element_blank(),
+panel.grid.minor.x=element_blank(),
+panel.grid.major.y=element_line(color=grid,size=0.1),
+panel.grid.major.x=element_line(color=grid,size=0.1),
+panel.border=element_rect(fill=NA,color="grey80",size=.25),
+########################################## Panel 
+panel.background=element_rect(
+fill = "#f7ddbb", colour = "#f7ddbb",size = 2, linetype = "solid"),
+plot.background=element_rect(fill = "#f7ddbb"),
+plot.margin=unit(c(1.5,3,0.75,3),"cm"),
+plot.title=element_text(family="Georgia",color="grey25",
+hjust=0.5,vjust=8, face="bold",size=14),
+plot.caption=element_text(color="grey60",family="Bahnschrift",size=6,hjust=1.4,vjust=-10),
+########################################## Legend
+legend.title=element_blank(),
+legend.position="bottom",
+legend.key=element_rect(fill="#f7ddbb"),
+legend.key.width=unit(1.5,"cm"),
+legend.background=element_rect(fill="#f7ddbb"),
+legend.text=element_text(margin=margin(r=4.2,unit="cm"),######
+				color="grey60",family="Bahnschrift",size=6),
+legend.box.margin=margin(l=4,t=-0.03,b=0,unit="cm"),
+)
+
+#################### Fin ###################### 
+
+DuBois_Georgia_Plate
+###Add grid bracket
+grid.brackets(500,663,130,663,lwd=0.2,ticks=0.54,h=.030,curvature=0.20,col="grey60",type=5)
+
+###############################################
