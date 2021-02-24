@@ -1,0 +1,151 @@
+library(tidyverse)
+library(reshape)
+library(ggplot2)
+library(extrafonts)
+library(pBrackets)
+
+############# Import #################
+
+AER<-
+read.csv(
+"Arrests_Ethnicity_Region.csv")
+
+Pop_Region<-read.csv(
+"Pop_by_region.csv")
+Pop_Region
+
+loadfonts("win")
+
+############# Wrangle #################
+
+names(AER)<-c("Area","Total","White","Black","Asian","Mixed","Other")
+AER[c(1:10),1]<-c("North_East","North_West",
+			"Yorkshire_and_the_Humber",
+			"East_Midlands","West_Midlands",
+			"East","London","South_East","South_West",
+			"Wales")
+
+# Change class from chacter to numeric
+AER1$White <- as.numeric(gsub(",","",AER1$White))
+AER1$Black <- as.numeric(gsub(",","",AER1$Black))
+AER1$Asian <- as.numeric(gsub(",","",AER1$Asian))
+AER1$Other <- as.numeric(gsub(",","",AER1$Other))
+AER$Area <- gsub(" ","_",AER$Area)
+
+AER<-melt(AER,
+idvars=Area,
+measure.vars=c("White","Black","Asian","Mixed","Other"))
+
+names(AER)<-c("Area","Ethnicity","Incidents") # Give names to new columns
+AER$Ethnicity <- as.character(gsub(" ","",AER$Ethnicity))
+
+AER<-arrange(AER,Area,Ethnicity) # arrange as Pop_Region
+
+#Pop_Region
+
+Pop_Region<-Pop_Region[-c(11:15),] #Delete out England total
+
+Pop_Region$Region<-as.factor(Pop_Region$Region)
+Pop_Region$Ethnicity<-as.factor(Pop_Region$Ethnicity)
+
+# Join Data
+Pop_Region$Racial_Incidents<-AER$Incidents
+
+Arrest_Data$Region<-factor(Arrest_Data$Region, levels = c("North_East","North_West","Yorkshire","East_Midlands","West_Midlands","Wales","East","London","South_East","South_West"))
+
+Arrest_Data$Region<-factor(Arrest_Data$Region, levels = rev(levels(Arrest_Data$Region)))
+
+############# Statistics #############
+
+Arrest_Data%>%
+group_by(Ethnicity)%>%
+summarise(MeanArrest = mean(AP))
+`summarise()` ungrouping output (override with `.groups` argument)
+# A tibble: 5 x 2
+  Ethnicity MeanArrest
+  <fct>          <dbl>
+1 "Asian"      0.0105 
+2 "Black"      0.0400 
+3 "Mixed"      0.0173 
+4 "Other "     0.0231 
+5 "White"      0.00993
+
+Arrest_Data%>%
+summarise(MeanArrest = mean(AP))
+
+  MeanArrest
+1 0.02016027
+
+############# ggplot #################
+
+AER<-
+ggplot(Arrest_Data,aes(Ethnicity,Region,size=AP))+
+geom_point(aes(color=AP*100))+
+scale_size(range=c(1,12),guide="none")+ #remove key for size
+scale_color_gradient2(midpoint = mean(Arrest_Data$AP*100) , 
+					low = "red" , 
+					mid =  "grey75" , 
+					high = "black")+
+scale_y_discrete(labels=
+			    c(	"SW" , "SE",
+			            "LDN" , "E", "W",
+					"WM" , "EM" , "YK",
+					"NW" , "NE"))+
+labs(
+	title = 
+		"PROPORTIONS   OF   ARRESTS   \nAMONG   BRITISH   ETHNIC   GROUPS .",
+	subtitle = 
+		"FOR   EACH   REGION",
+	color = 
+		"PROPORTION    OF    ARRESTS   PER   100    PEOPLE", 
+	caption =
+		"Source: ONS 2018/19 || Web: NearAndDistant.com | Twitter: @NearAndDistant | Git:  NearAndDistant")+
+guides(color = guide_colorsteps(barwidth = 15,
+					 barheight = .5,
+					 title.position = "top",
+					 title.hjust = .5))+
+coord_cartesian(clip="off")+
+Arrest_Theme
+
+############ pallette ###############
+
+Panel<-"antiquewhite"
+Text<-"black"
+
+############# theme #################
+Arrest_Theme<-
+theme(
+#################################### Text
+plot.title=element_text(family="Britannic Bold" , color=Text , size=18 , vjust=10 , hjust=0.5), 
+plot.subtitle=element_text(family="Britannic Bold" , color=Text , size=10 , vjust=14 , hjust=0.5), 
+plot.caption=element_text(family="Calibri" , color=Text , hjust=0.5 , vjust=-40 , size=8),
+axis.title.x=element_blank(),
+axis.title.y=element_blank(),
+axis.text.x=element_text(family="Castellar" , color=Text , size=12 , vjust=1),
+axis.text.y=element_text(family="Chiller" , color=Text , size=12 , face="bold" , hjust=0),
+axis.ticks.x=element_blank(),
+axis.ticks.y=element_blank(),
+axis.line.y=element_line(color="grey80"),
+#################################### Grid
+panel.grid.minor.x=element_blank(),
+panel.grid.minor.y=element_blank(),
+panel.grid.major.x=element_blank(),
+panel.grid.major.y=element_blank(),
+#################################### Panel
+plot.background=element_rect(fill = Panel),
+panel.background=element_rect(fill = Panel , colour = Panel , size = 0 , linetype = "solid"),
+plot.margin=unit(c(2,2,2.5,2),"cm"),
+#################################### Legend
+legend.position="bottom",
+legend.box.margin=margin(t=.5,l=0,b=-2,r=0,unit="cm"),
+legend.title = element_text(family="Britannic Bold" , size = 8),
+legend.text = element_text(family="Britannic Bold" , size = 8),
+legend.key.width=unit(1.5,"cm"),
+legend.background=element_rect(fill=Panel),
+)
+
+grid.brackets(535,700,122,700,lwd=0.30,ticks=0.62,h=.025,curvature=0.20,col="grey60",type=5)
+
+############# Fin #################
+
+AER
