@@ -1,0 +1,89 @@
+###################################
+           Slave Routes
+###################################
+
+library(readr)
+library(tidyverse)
+library(ggplot2)
+
+############ Importing ############
+
+slave_routes <- 
+	readr::read_csv(
+		'https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-06-16/slave_routes.csv')
+
+african_names <- 
+	readr::read_csv(
+		'https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-06-16/african_names.csv')
+
+############ Wrangle ##############
+
+Freq_african_names <- as.data.frame(table(african_names$name))
+
+Freq_african_names <- arrange(Freq_african_names,desc(Freq))
+
+Cut_Freq <- Freq_african_names[1:length(slave_routes$voyage_id),]
+
+#Generate random numbers for sequence not in alphabetical order
+Cut_Freq$Rand <- sample(0:36109)
+Cut_Freq <- arrange(Cut_Freq,desc(Freq),Rand)
+
+## To Join
+
+slave_routes_name <- arrange(slave_routes,desc(n_slaves_arrived))
+slave_routes_name$assigned_name <- Cut_Freq$Varl
+slave_routes_name$assigned_freq <- Cut_Freq$Freq
+
+names(slave_routes_name)[9]<-"assigned_name"
+
+############ Palette ##############
+
+background <- "grey15"
+text <- "red3"
+
+############# ggplot ############## [slave_routes]
+
+ggplot(slave_routes_name, aes(year_arrival, n_slaves_arrived, label = assigned_name , size = n_slaves_arrived))+
+geom_jitter(shape = 16 , alpha = 0.5 , color = text)+
+geom_text(check_overlap = T , color = "white")+
+# Set up axis breaks, positioning and remove blank space
+scale_x_continuous(limits = c(1500, 1870) , expand = c(0, 0) , position = "bottom" , breaks=seq(1500, 1870, 50))+
+scale_y_continuous(limits = c(0, 2000) , expand = c(0, 0) , breaks=seq(0, 2000, 500))+
+annotate("text", x = 1510, y = 1930,
+           label = toupper("Slavery is African History Interrupted"),
+           hjust = 0, size = 6, colour = text, family= "Veranda")+
+annotate("text", x = 1510, y = 1855,
+           label = str_wrap(
+           "More than 12 million African men, women and children were stolen from their families for sale by Europeans between 1514 and 1866. Approx. 1.2 - 2.4 million died on route and would have been thrown overboard. This graphic shows around 5 million individuals across 36,000 trips, presenting the most frequent names from the record, with red representing each slave ship and it's relative size."), 
+	     hjust = 0, vjust = 1, size = 3.5, colour = "white")+
+annotate("text", x = 1510, y = 1480, 
+	     label = toupper("SOURCE: SLAVE VOYAGES | GRAPHIC: NEAR AND DISTANT"), 
+	     family = "IBM Plex Sans Thin", colour = "grey60", size = 2.5, hjust = 0, vjust = 1) +
+coord_cartesian(clip="off")+
+SlaveTheme
+
+#################   Theme   ##################
+SlaveTheme<-
+theme(
+#################################### Text
+plot.title=element_text(color="grey20" , hjust=0 , vjust=24 , size=12),
+plot.subtitle=element_text(color="grey20" , hjust=0 , vjust=24 , size=8),
+plot.caption=element_text(hjust=0.5 , vjust=3 , size=8),
+axis.title.x=element_blank(),
+axis.title.y=element_blank(),
+axis.text.x=element_text(color="grey50" , size=18, vjust = -1.5 , face="bold"),
+axis.text.y=element_text(color="grey50" , size=12, face="bold"),
+axis.ticks.x=element_blank(),
+axis.ticks.y=element_blank(),
+#################################### Grid
+panel.grid.minor.x=element_blank(),
+panel.grid.minor.y=element_blank(),
+panel.grid.major.x=element_blank(),
+panel.grid.major.y = element_line(colour = "grey25", size = 0.25),
+#################################### Panel
+plot.background=element_rect(fill = background),
+panel.background=element_rect(fill = background , colour = background , size = 0 , linetype = "solid"),
+plot.margin=unit(c(1.25,.75,0.5,.5),"cm"),
+#################################### Legend
+legend.position="blank"
+)
