@@ -1,5 +1,4 @@
-###### Data-Science-with-R
-#### Data Science with R Projects 
+# Data Science with R Projects 
 
 ### 09-03-2021 : Bechdel Test and the Oscars
 
