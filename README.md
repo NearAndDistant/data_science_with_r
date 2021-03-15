@@ -16,7 +16,7 @@ Using data anlytics to model Trans-Atlantic enslavement routes using SlaveVoyage
 
 ### February 2021 : Proportion of Arrests Among British Ethnic Groups
 
-Using Office of National Statistics (ONS) data anlytics to model and represent arrests in Britain across ethnicities. Joining ethnic population and arrests data per regions.
+Using Office of National Statistics (ONS) data anlytics to model and represent arrests in Britain across ethnicities. Joining ethnic population and arrests data per regions:
 [Git Code](https://github.com/NearAndDistant/Data-Science-with-R/blob/main/Arrests%20%26%20Ethnicity%20Data/%5BCode%5D)
 
 ![AER11](https://user-images.githubusercontent.com/79040885/111142508-ad9b3100-857c-11eb-9e76-2f827532f78c.jpeg)
