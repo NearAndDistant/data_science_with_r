@@ -1,7 +1,7 @@
-# Data-Science-with-R
-Data Science with R Projects 
+###### Data-Science-with-R
+#### Data Science with R Projects 
 
-'09--3-2021 : Bechdel Test and the Oscars
+### 09-03-2021 : Bechdel Test and the Oscars
 
 Taking a look at female representation at the Oscars through scraping Oscar nominations and wins and representing what proportion of the pass the Bechdel Test: <Data-Science-with-R/Tidy_Tuesday/2021-03-09: Bechdel Test/[Code] "Code here">
 
