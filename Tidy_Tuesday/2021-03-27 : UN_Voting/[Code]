@@ -1,0 +1,83 @@
+################## UN VOTES ##########################
+
+library(tidyverse)
+library(showtext)
+library(ggtext)
+
+tuesdata <- tidytuesdayR::tt_load('2021-03-23')
+unvotes <- tuesdata$unvotes
+rollcalls <- tuesdata$roll_calls
+un_issues <- tuesdata$issues
+
+#wrangle
+
+un_votes_issues <- unvotes %>% 
+  inner_join(un_issues , by = "rcid") %>%
+  inner_join(rollcalls, by = "rcid")
+  
+un_votes_issues$date <-
+  un_votes_issues$date %>% 
+  as.Date("%Y-%m-%d")
+
+#ggplot
+
+un_color <- "#5B92E5" #actual rgb/hex color associated with UN
+un_text <- "white"
+font_add_google("Roboto", "roboto") #actual font style associated with UN
+showtext_auto()
+un_votes_issues$issue <- toupper(un_votes_issues$issue)
+text <- "<span style = color:grey35>**THE VARIANCE OF <span style=color:black>DISAGREEMENT</span>AND <span style=color:white>CONSENSUS</span> BETWEEN UN STATES SINCE 1946.**</span><br><br>
+<span style ='font-size:16px'>BETWEEN 1960 TO 1980 THERE WAS A SIGNIFICANT INCREASE IN CONSENSUS OF OPINION ACROSS ISSUES IN THE UN.<br>
+MORE RECENTLY WE HAVE SEEN CONSENSUS  TREND TOWARDS  DISAGREEMENT (SHOWN IN THE SHADED AREA) IN ALL BUT HUMAN RIGHTS.<br>
+HUMAN RIGHTS AS AN ISSUE, HAS HAD THE MOST DISAGREEMENT IN STATE OPINION OVER TIME AND REMAINS A DIVIDED ISSUE EVEN TO THIS DAY BETWEEN UN STATES.</span>"
+  
+  un_votes_issues %>%
+  group_by(rcid, vote) %>%
+  mutate(n_vote = n()) %>%
+  group_by(rcid) %>%
+  mutate(pc_vote = n_vote / n()) %>%
+  select(rcid, date, vote,  issue, unres, pc_vote) %>% #n_votes must be deselected for row collapse to work in pivot_wider
+  distinct() %>%
+  pivot_wider(names_from = vote , values_from = pc_vote , values_fill = 0) %>%
+  mutate(var_vote = ifelse(yes==1 | yes==0,1,abs(max(yes,no)-min(yes,no)))) %>%
+  ggplot(aes(date, var_vote, color = var_vote))+
+  geom_jitter()+
+  scale_color_gradient2(low = "black" , mid = "deepskyblue" , high = "white" , midpoint = 0.5)+
+  geom_smooth(se = FALSE, lwd = 1.5)+
+  annotate("rect", xmin = as.Date("2010-01-01") , xmax = as.Date("2020-06-01") , ymin = -Inf , ymax = Inf , fill = "dodgerblue4" , alpha = 0.4)+
+  facet_wrap(~issue , ncol = 3)+
+  labs(
+    title = 
+  "HOW UNITED ARE THE UNITED NATIONS?",
+    subtitle = text,
+    caption =
+  "Source: Havard Database, Eric Voeten || Web: NearAndDistant.com | Twitter: @NearAndDistant | Git:  NearAndDistant"
+      )+
+  coord_cartesian(clip="off")+
+#theme
+  theme(
+    #################################### Text
+    plot.title=element_text(family = "roboto" , color= un_text , hjust=0 , vjust=1.5 , size=22, face = "bold"),
+    plot.subtitle=element_markdown(family = "roboto" , color= un_text , hjust=0 , size=16, lineheight = 1 , margin = unit(c(0,0,1.75,0),"cm")),
+    plot.caption=element_text(family = "roboto" , color = un_text , hjust=0.5 , vjust=-5 , size=8),
+    axis.title.x=element_blank(),
+    axis.title.y=element_blank(),
+    axis.text.x=element_text(family = "roboto" , color= un_text , size=14, face="bold"),
+    axis.text.y=element_blank(),
+    axis.ticks.x=element_blank(),
+    axis.ticks.y=element_blank(),
+    #################################### Grid
+    panel.grid.minor.x=element_blank(),
+    panel.grid.minor.y=element_blank(),
+    panel.grid.major.x=element_blank(),
+    panel.grid.major.y=element_blank(),
+    #################################### Panel
+    plot.background=element_rect(fill = un_color),
+    panel.background=element_rect(fill = un_color),
+    strip.background =element_rect(fill= un_color),
+    strip.text = element_text(family = "roboto" , colour = un_text , size = 16 , face = "bold"),
+    plot.margin=unit(c(1,.5,0.5,.5),"cm"),
+    panel.spacing = unit(1.5, "lines"),
+    #################################### Legend
+    legend.position = "blank"
+      )
