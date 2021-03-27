@@ -1,5 +1,12 @@
 # Data Science with R: Projects 
 
+### March 2021 : UN Voting Since 1946, Variance of Consensus
+
+Modelling the variation of disagreement and consensus within the UN across issues:
+[Git Code](https://github.com/NearAndDistant/data_science_with_r/blob/main/Tidy_Tuesday/2021-03-27%20:%20UN_Voting/%5BCode%5D)
+
+![How United are the United Nations](https://user-images.githubusercontent.com/79040885/112729428-ef848980-8f23-11eb-84aa-577f77b653fc.png)
+
 ### March 2021 : Bechdel Test and the Oscars
 
 Taking a look at female representation at the Oscars through scraping Oscar nominations and wins from 1971-2013 and representing what proportion pass the Bechdel Test: 
