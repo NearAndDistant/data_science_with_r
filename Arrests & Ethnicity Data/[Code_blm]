@@ -1,0 +1,60 @@
+######## ARREST TREEMAP DIAGRAM ##########
+
+library(treemap)
+library(scales)
+library(patchwork)
+library(showtext); showtext_auto()
+
+font_add_google("Roboto" , "roboto")
+palette <- c("#000000" , "#FBEE1F" , "#C20008" , "#252421" , "#424042")
+
+#Arrest_Data.csv: find in Git/NearAndDistant
+
+#Population plot
+Population <- 
+  Arrest_Data %>%
+  group_by(Ethnicity) %>%
+  summarise(n = sum(Population)) %>%
+  mutate(per = paste(Ethnicity ,percent(n/sum(n),0.01) , sep  ="\n")) %>%
+  ggplot(aes(area = n , 
+             label = per))+
+  geom_treemap(fill = palette)+
+  geom_treemap_text(color = c("white" , "grey15" , "white" , "white" , "white"),
+                    place = "centre")+
+  labs(title = "Population" , hjust = 0)+
+  theme(
+    plot.title=element_text(family="roboto" , color="white"), 
+    plot.background=element_rect(fill = "#535052" , colour = NA)
+    )
+
+#Arrests plot
+Arrests <- 
+  Arrest_Data %>%
+  group_by(Ethnicity) %>%
+  summarise(n = sum(Arrests)) %>%
+  mutate(per = paste(Ethnicity ,percent(n/sum(n),0.01) , sep  ="\n")) %>%
+  ggplot(aes(area = n , 
+             label = per))+
+  geom_treemap(fill = palette)+
+  geom_treemap_text(color = c("white" , "grey15" , "white" , "white" , "white"),
+                    place = "centre")+
+  labs(title = "Arrests" , hjust = 0)+
+  theme(
+    plot.title=element_text(family="roboto" , color="white"), 
+    plot.background=element_rect(fill = "#535052" , colour = NA)
+    )
+
+
+Population / Arrests +
+plot_layout(nrow = 2) +
+  plot_annotation(
+    title = "POPULATION  VERSUS  ARRESTS  AMONG  BRITISH  ETHNIC  GROUPS (2018/19).",
+    caption = "Source: ONS 2018/19 || Web: NearAndDistant.com | Twitter: @NearAndDistant | Git:  NearAndDistant",
+    theme = theme(
+      plot.background=element_rect(fill = "#535052" , colour = NA),
+      plot.margin=unit(c(1,1,1,1),"cm"),
+      plot.title=element_text(family="roboto" , color="white" , size=18 , vjust=2 , hjust=0.5), 
+      plot.subtitle=element_text(family="roboto" , color="white" , size=10 , vjust=5 , hjust=0.5), 
+      plot.caption=element_text(family="Calibri" , color="white" , hjust=0.5 , vjust=-8 , size=10),     
+    )
+  )
