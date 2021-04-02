@@ -2,7 +2,7 @@
 
 ### April 2021 : BLM : Proportion of UK Pop and Arrests within repspective ethnicities
 
-Modelling the ONS 2018/19 dataset to show the delta in pop and arrest proportions
+Modelling the ONS 2018/19 dataset to show the delta in pop and arrest proportions:
 [Git Code](https://github.com/NearAndDistant/data_science_with_r/blob/main/Arrests%20%26%20Ethnicity%20Data/%5BCode_blm%5D)
 
 ![Ethnic Arrests](https://user-images.githubusercontent.com/79040885/113411760-8337d900-93ae-11eb-8ae8-0c47f9dfd8ee.png)
