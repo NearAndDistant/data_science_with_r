@@ -1,0 +1,98 @@
+############ DEFORESTATION
+
+library(tidyverse)
+library(showtext) ; showtext_auto()
+
+font_add_google("Michroma" , "Michroma")
+
+tuesdata <- tidytuesdayR::tt_load(2021, week = 15)
+forest_area <- tuesdata$forest_area
+
+forest_area_world <-
+  forest_area %>% 
+  filter(is.na(code))
+
+# those countries without codes caught by filter ; (3-alpha codes) to input
+forest_area <-
+  forest_area %>%
+  mutate(
+    entity = if_else(entity == "United Arab Emirates", "UAE", entity), 
+    code = if_else(entity == 'Wallis and Futuna Islands', 'WLF', code),
+    code = if_else(entity == 'Bonaire, Sint Eustatius and Saba' , 'BES' , code),
+    code = if_else(entity == 'Faroe Islands' , 'FRO' , code),
+    code = if_else(entity == 'French Guyana' , 'GUF' , code),
+    code = if_else(entity == 'Sint Maarten (French part)' , 'SXM' , code),
+    code = if_else(entity == 'Micronesia' , 'FSM' , code),
+    code = if_else(entity == 'World' , NA_character_ , code)
+  )
+
+# re-filter for is.na()
+forest_area_countries <-
+  forest_area %>% 
+  filter(!is.na(code))
+
+# summarise delta years_area
+#forest_area_c_delta_n <-
+############################  
+forest_area_countries %>% 
+  group_by(entity) %>%
+  filter(
+    year == max(year) |
+    year == 1993) %>% # 1990 is not a complete dataset summing to 3.138304bn hectares / 4.24bn hectares
+  pivot_wider(names_from = year , values_from = forest_area) %>%
+  drop_na() %>%
+  mutate(`1993` = `1993`/100 * 4.21, # absolute world figure of forest area in hectares from FAO (1993)
+         `2020` = `2020`/100 * 4.06, # absolute world figure of forest area in hectares from FAO (2020)
+         diff = (`2020` - `1993`)/`1993`, # total absolute world loss -0.178404
+         diff = replace_na(diff,0),
+         change = if_else(diff < 0,"loss" , "gain")) %>%
+  ##############################################################################
+  ggplot(aes(entity , diff , fill = change)) + 
+  geom_col() +
+  scale_fill_manual(values = c("#1e453e" , "#D4BF88"))+
+  # central tendency given by median as z-score for diff is 22.8964 which falls outside mean appropriate skew
+  geom_hline(yintercept = c(median(forest_area_c_delta_n$diff[which(forest_area_c_delta_n$change == "gain")]),
+                            median(forest_area_c_delta_n$diff[which(forest_area_c_delta_n$change == "loss")])))+
+  # add median gain
+  annotate("text", 
+           x = -1.25, 
+           y = median(forest_area_c_delta_n$diff[which(forest_area_c_delta_n$change == "gain")])+0.03 , 
+           label = expression(paste(tilde(x) , "= 3.21%")),
+           color = "#DAF1DE" , size = 2.25)+
+  # add median loss
+  annotate("text", 
+           x = -1.25, 
+           y = median(forest_area_c_delta_n$diff[which(forest_area_c_delta_n$change == "loss")])-0.03 , 
+           label = expression(paste(tilde(x) , "= 9.40%")),
+           color = "#DAF1DE" , size = 2.25)+
+  geom_text(data = subset(forest_area_c_delta_n , 
+                          change == "gain" & 
+                          diff >= mean(diff[which(change == "gain")]) &
+                          entity != "Chile" & entity != "Jamaica"), 
+            aes(entity , diff , label = paste(entity, "(", percent(diff,2), ")")),
+            angle = 90 , size = 2.75 , hjust = -0.15, color = "#DAF1DE")+
+  geom_text(data = subset(forest_area_c_delta_n , 
+                          change == "loss" & 
+                          diff <= -0.25 &
+                          entity != "Niger"), 
+            aes(entity , diff , label = paste(entity, "(", percent(diff,2), ")")), 
+            angle = 270 , size = 2.75 , hjust = -0.05 , color = "#DAF1DE")+
+  coord_cartesian(clip = "off") +
+  labs(title = 
+"DEFORESTATION",
+       subtitle = 
+"Between 1993 and 2020 the world lost 0.15Bn hectares (3.6%) of forest net.
+This visual shows the relative change within each country's own forest area over this period which together equated to the global net loss.",
+caption =
+"Source: OurWorldInData.org  ||  Viz: NearAndDistant.com  |  Git:  NearAndDistant  |  Twitter: @NearAndDistant")+
+  theme_void()+
+  theme(
+    plot.title = element_text(family = "Michroma" , color = "#DAF1DE" , size = 22 , vjust = -85 , hjust = -.12), 
+    plot.subtitle = element_text(vjust = -304 , hjust = -0.12 , color = "#DAF1DE" , size = 8),
+    plot.caption = element_text(family = "Michroma" , vjust = -55, hjust = -0.18 , color = "#DAF1DE" , size = 6),
+    #axis.text.y = element_text(color = "white", size = 12, hjust = -2),
+    plot.margin = unit(c(3,3.25,3.5,3.25), "cm"),
+    plot.background=element_rect(fill = "#455b55"),
+    panel.background=element_rect(fill = "#455b55" , colour = "#455b55"),
+    legend.position = "none"
+  )
