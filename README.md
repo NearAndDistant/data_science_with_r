@@ -1,5 +1,12 @@
 # Data Science with R: Projects 
 
+### May 2021 : CEO Departures (1996-2019)
+
+Using data from Gentry et al. to analyse trends of reasons for departures of CEOs in the S&P1500 over the period 1996 to 2019:
+[Git Code](https://github.com/NearAndDistant/data_science_with_r/blob/main/Tidy_Tuesday/2021-05-01%20:%20CEO%20Departure/%5BCode%5D)
+
+![S&P1500 CEO DEPARTURES 1996-2019](![CEO Dismissal](https://user-images.githubusercontent.com/79040885/116790386-b8b60c00-aaab-11eb-8c21-ece030aa354c.png)
+
 ### April 2021 : Estbalishing the United States : Using USPS and SlaveVoyages data to visualise the settlement and establishment of the United States 
 
 Using Richard Helbrock's data (2021) on USPS office established and discontinued as well as SlaveVoyages ship porting visualise over time:
