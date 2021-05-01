@@ -1,0 +1,202 @@
+#########################################
+CEO DEPARTURES
+#########################################
+
+library(tidyverse)
+library(ggpubr)
+library(rsample)
+library(stats)
+library(broom)
+library(showtext); showtext_auto() ; font_add_google("Molengo" , "molengo")
+
+# We introduce an open‐source dataset documenting the reasons for CEO departure in S&P 1500 firms 
+# from 2000 through 2018. In our dataset, we code for various forms of voluntary and involuntary departure. 
+# We compare our dataset to three published datasets in the CEO succession literature to assess both 
+# the qualitative and quantitative differences among them and to explore how these differences impact 
+# empirical findings associated with the performance‐CEO dismissal relationship. The dataset includes eight 
+# different classifications for CEO turnover, a narrative description of each departure event, and links 
+# to sources used in constructing the narrative so that future researchers can validate or adapt the coding. 
+
+tuesdata <- tidytuesdayR::tt_load(2021, week = 18)
+departures <- tuesdata$departures
+rm(tuesdata)
+
+### Wrangle
+departures.clean <-
+  departures %>%
+  filter(fyear_gone < 2020 & 
+         fyear_gone > 1995 &
+         ceo_dismissal != 8 & # Missing Data
+         ceo_dismissal != 9) %>% # Erroneous Data
+  mutate(vol_invol = recode_factor(departure_code,
+                                          '1' = "Involuntary",
+                                          '2' = "Involuntary",
+                                          '3' = "Dismissal",
+                                          '4' = "Dismissal",
+                                          '5' = "Voluntary",
+                                          '6' = "Voluntary",
+                                          '7' = "Other"),
+         departure_code = recode_factor(departure_code, 
+                                          '1' = "Death",
+                                          '2' = "Illness",
+                                          '3' = "Performance Dismissal",
+                                          '4' = "Legal Dismissal",
+                                          '5' = "Retired",
+                                          '6' = "Further Venture",
+                                          '7' = "Other: Interim CEO, CEO M&A departure, Company Ceased etc")) %>% #Interim CEO, CEO M&A departure, Company Ceased etc
+  group_by(departure_code) %>%
+  mutate(type_total_departure = n()) %>%
+  ungroup() %>%
+  select(exec_fullname , fyear , fyear_gone , vol_invol , departure_code , ceo_dismissal , type_total_departure)
+  
+departures.clean$departure_code <- factor(departures.clean$departure_code, levels = c("Further Venture" , "Retired" , "Other" , "Death", "Illness" , "Performance Dismissal"))
+departures.clean$vol_invol <- factor(departures.clean$vol_invol , levels = c("Involuntary" , "Dismissal" , "Other" , "Voluntary"))
+
+### Formatting
+color_scheme <- c("Voluntary" = "#94a897" , "Involuntary" = "#363244" , "Dismissal" = "#de885b", "Other" = "#b4b3bb" )
+palette_scheme <- "#e0e1e1" #dbc6b3
+text_scheme <- "#393B45"
+
+### Exploratory 
+# Departure Time, Faceted Histogram
+departures.time <-
+departures.clean %>%
+  drop_na(departure_code) %>%
+  count(departure_code, vol_invol, fyear_gone , type_total_departure) %>%
+  ggplot(aes(fyear_gone , n , color = vol_invol)) +
+  geom_smooth(method = "lm" , alpha = 0.2 , lty = 2, color = "#3d4148")+
+  geom_line(size = 1.5)+
+  facet_wrap(~fct_reorder(departure_code, -type_total_departure), ncol = 1 , scales = "free_y") +
+  scale_color_manual(values = color_scheme) +
+  scale_x_continuous(breaks = c(1996 , 2000, 2005, 2010, 2015 ,2019) , expand = c(0,0))+
+  scale_y_continuous(limits = c(0,NA)) +
+  coord_cartesian(clip = "off") +
+  theme_minimal() +
+  labs(title = "S&P1500 CEO DEPARTURES 1996-2019",
+       caption = "Source: Gentry et al.  ||  Viz: NearAndDistant.com  |  Git:  NearAndDistant  |  Twitter: @NearAndDistant")+
+  theme(
+    plot.title = element_text(size = 30 , vjust = 6 , hjust = -0.05 , face = "bold" , family = "molengo"),
+    strip.text = element_text(size = 14 , hjust = 0 , face = "bold" , family = "molengo"),
+    plot.caption = element_text(size = 10 , hjust = -.07, vjust = -15),
+    panel.background = element_rect(fill = palette_scheme , color = palette_scheme),
+    plot.background = element_rect(fill = palette_scheme , color = palette_scheme),
+    axis.title = element_blank(),
+    axis.text.y = element_text(hjust = 1 , size = 10),
+    axis.text.x = element_text(vjust = -2 , size = 18 , family = "molengo"),
+    panel.grid = element_blank(),
+    legend.position = "none",
+    legend.title = element_blank(),
+    plot.margin = margin(30,7.5,20,5, unit = "mm"))
+
+# Departure Code Count
+departures.count <-
+  departures.clean %>%
+  count(departure_code, vol_invol) %>%
+  ggplot(aes(n , reorder(departure_code, n), fill = vol_invol)) +
+  geom_col() +
+  geom_text(aes(label = n), hjust = -0.25) +
+  scale_fill_manual(values = color_scheme) +
+  coord_cartesian(clip = "off") +
+  theme_minimal() +
+  theme(panel.background = element_rect(fill = palette_scheme , color = palette_scheme),
+        plot.background = element_rect(fill = palette_scheme , color = palette_scheme),
+        axis.title = element_blank(),
+        axis.text.x = element_blank(),
+        axis.text.y = element_blank(),
+        panel.grid.major.y = element_blank(),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        legend.position = "none",
+        plot.margin = margin(38,12,22,0, unit = "mm"))
+
+# Vol / Invol / Dis departure count
+vol.invol.count <-
+  departures.clean %>%
+  count(vol_invol) %>%
+  ggplot(aes(reorder(vol_invol,n),n, fill = vol_invol)) +
+  geom_col() +
+  geom_text(aes(label = n), vjust = -0.5) +
+  scale_fill_manual(values = color_scheme) +
+  scale_y_continuous(limits = c(0,3750))+
+  labs(caption = "'Other' is made up of Interim CEOs, M&A departures, Company Ceasation etc")+
+  theme_void()+
+  theme(legend.position = "top",
+        legend.justification = "right",
+        legend.title = element_blank(),
+        plot.caption = element_text(hjust = 0.08 , vjust = 9, size = 6),
+        panel.background = element_rect(fill = palette_scheme , color = palette_scheme),
+        plot.background = element_rect(fill = palette_scheme , color = palette_scheme),
+        plot.margin = margin(18,8,0,4,unit = "mm"))
+
+
+### Binormial Model of dismissal vs other
+# Set up
+dismissal<-
+  departures.clean %>%
+    mutate(dismissed_clean = if_else(departure_code %in% c("Performance Dismissal" , "Legal Dismissal"),
+                                                           "Dismissal" , "Other")) %>%
+    count(fyear_gone  , dismissed_clean) %>%
+  pivot_wider(names_from = dismissed_clean , values_from = n)
+
+# binomial
+mod <-
+  glm(data = dismissal , cbind(Dismissal , Other) ~ fyear_gone, family = "binomial")
+
+tidy(mod , exponentiate = TRUE)
+
+# Bootstap 
+set.seed(123)
+bootstap_dismissal <-
+  bootstraps(departures.clean , times = 1e3)
+
+# Fit Model
+fit_binorm <- function(split) {
+  dismissal<- # c/p of set up
+    analysis(split) %>% # Changed for analysis function model
+    mutate(dismissed_clean = if_else(departure_code %in% c("Performance Dismissal" , "Legal Dismissal"),
+                                     "Dismissal" , "Other")) %>%
+    count(fyear_gone  , dismissed_clean) %>%
+    pivot_wider(names_from = dismissed_clean , values_from = n)
+  
+  mod <-
+    glm(data = dismissal , cbind(Dismissal , Other) ~ fyear_gone, family = "binomial")
+  
+  tidy(mod , exponentiate = TRUE)
+  }
+
+# Fit Model to Bootstrap (1000)
+boot_model <-
+bootstap_dismissal %>%
+  mutate(coef_info = map(splits , fit_binorm))
+
+# CI
+intervals <- 
+  int_pctl(boot_model, coef_info) %>%
+  filter(term == "fyear_gone") %>%
+  pivot_longer(cols = c(.lower:.upper))
+
+# Visualise bootstrapped model
+boot_plot <-
+boot_model %>%
+  unnest(coef_info) %>%
+  filter(term == "fyear_gone") %>%
+  ggplot(aes(estimate)) +
+  geom_density(alpha = 0.8, fill = "#de885b")+
+  scale_y_continuous(limits = c(0,110))+
+  scale_x_continuous(breaks = 1 , expand = c(0,0))+
+  geom_segment(aes(x = 1 , y = 89 , xend = 1.0125 , yend = 89) , arrow = arrow() , color = "#393B45")+
+  annotate(geom = "text" , x = intervals$value , y = -Inf , label = paste(intervals$name , ":" , round(intervals$value,4))) +
+  annotate(geom = "text" , x = 1.0005 , y = 105 , hjust = 0 , label = "From 1996 to 2019, a CEO dismissal (legal or performance related)\nbecame 1.3% more likely each year") +
+  coord_cartesian(clip = "off") +
+  theme_minimal()+
+  theme(panel.background = element_rect(fill = palette_scheme , color = palette_scheme),
+        plot.background = element_rect(fill = palette_scheme , color = palette_scheme),
+        axis.title = element_blank(),
+        axis.text.y = element_text(size = 12),
+        axis.text.x = element_text(size = 12 , vjust = 5),
+        panel.grid = element_blank(),
+        legend.position = "none",
+        plot.margin = margin(0,8,16,0, unit = "mm"))
+
+### Grid
+gridExtra::grid.arrange(departures.time , departures.count , boot_plot , vol.invol.count , layout_matrix = rbind(c(1,2,4),c(1,2,3)), widths = c(1.6,0.25,1))
