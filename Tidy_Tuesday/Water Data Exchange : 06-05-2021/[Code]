@@ -7,7 +7,7 @@ library(lubridate)
 library(countrycode)
 library(ggmap)
 library(showtext); showtext_auto() ; font_add_google("Caveat" , "caveat")
-                                     font_add_google("Bangers" , "bangers")
+                                     font_add_google("Julius Sans One" , "julius")
                                      
 water <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-05-04/water.csv')
 
@@ -71,19 +71,19 @@ ggmap(uganda_map_watercolor , extent = "device") +
     guide = guide_legend(override.aes = list(size = 3 , alpha = 1)),
     values = c("Borehole" = "#000000" , "Protected Spring" = "#fcdc04" , "Undefined Shallow Well" = "#d90000" , "Other" = "#9ca69c")) +
   theme_map()+
-  labs(title = "Water Sources in Uganda",
+  labs(title = "Chanzo Cha Maji Nchini Uganda;\nWater Sources in Uganda",
        caption = "Source: Water Point Data Exchange  |\nViz: NearAndDistant.com  |\nGit:  NearAndDistant  |\nTwitter: @NearAndDistant") +
   borders(regions = "Uganda") +
-  theme(plot.title = element_text(vjust = -24 , hjust = 0.03 , size = 24 , family = "bangers" , face = "bold"),
-        plot.caption = element_text(vjust = 28 , hjust = 0.01 , size = 8 , face = "bold"),
-        legend.position = c(0.01,0.95),
-        legend.justification = c(0,0.95),
+  theme(plot.title = element_text(vjust = -10 , hjust = 0.03 , size = 18 , family = "julius" , face = "bold"),
+        plot.caption = element_text(vjust = 22 , hjust = 0.01 , size = 8 , family = "julius" , face = "bold"),
+        legend.position = c(0.01,0.93),
+        legend.justification = c(0,0.93),
         legend.background = element_rect(fill = "transparent" , color = "transparent"),
         legend.box.margin = margin(0,0,0,0, unit = "mm"),
-        legend.text = element_text(size = 12 , family = "bangers"),
+        legend.text = element_text(size = 7 , family = "julius" , face = "bold"),
         legend.key = element_rect(fill = "transparent" , color = "transparent"),
         legend.title = element_blank(),
-        plot.margin = margin(-0.35, -1, -0.575, -0.625, unit = "in"))
+        plot.margin = margin(-0.65, -1, -0.575, -0.6, unit = "in"))
 
 # Uganda Facet
 lumped_uganda <- 
@@ -105,3 +105,4 @@ lumped_uganda_map <-
         plot.margin = margin(0,-3,-0.15,-7.7, unit = "in"))
 
 gridExtra::grid.arrange(full_uganda_map , lumped_uganda_map , layout_matrix = cbind(1,2), widths = c(0.75,0.75))
+
