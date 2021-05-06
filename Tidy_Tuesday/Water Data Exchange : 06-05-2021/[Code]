@@ -1,0 +1,107 @@
+#####################################
+wdpx
+#####################################
+
+library(tidyverse)
+library(lubridate)
+library(countrycode)
+library(ggmap)
+library(showtext); showtext_auto() ; font_add_google("Caveat" , "caveat")
+                                     font_add_google("Bangers" , "bangers")
+                                     
+water <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-05-04/water.csv')
+
+### Wrangle
+water.cleaned <- 
+water %>%
+  mutate(report_date = mdy(report_date)) %>%
+  rename(lat = lat_deg, 
+         lon = lon_deg,
+         country = country_name) %>%
+  separate(water_tech , c("water_tech" , "brand"), sep = " - " , fill = "right") %>%
+  filter(install_year <= 2021,
+         install_year >= 1960,
+         lat < max(africa_map$lat),
+         lat > min(africa_map$lat),
+         lon < max(africa_map$long),
+         lon > min(africa_map$long))
+
+### Visualisation
+africa_map <-
+map_data("world") %>%
+  mutate(continent = countrycode(region , "country.name" , "continent")) %>%
+  filter(continent == "Africa")
+
+# Africa Map
+water.cleaned %>%
+ggplot(aes(lon , lat)) +
+  geom_polygon(aes(long , lat , group = group), data = africa_map,
+               fill = "white" , color = "grey80") +
+  geom_point(size = 0.1)+
+  theme_map()
+
+# Uganda Point Map
+water.cleaned %>%
+  filter(country == "Uganda",
+         between(lat , -2 , 4),
+         between(lon , 29.5 , 35)) %>%
+  ggplot(aes(lon , lat)) +
+  borders("world" , regions = "Uganda") +
+  geom_point(size = 0.1) +
+  theme_map()
+
+# Uganda Data
+water.uganda <- 
+  water.cleaned %>%
+  filter(country == "Uganda",
+         between(lat , -2 , 4),
+         between(lon , 29.5 , 35)) 
+
+# Uganda Map Data
+bbox <- c(left = 29.5 , bottom = -2 , right = 35 , top = 4.5)
+uganda_map <- get_stamenmap(bbox , zoom = 8)
+uganda_map_v2 <- get_stamenmap(bbox , zoom = 8 , maptype = "terrain-lines")
+uganda_map_watercolor <- get_stamenmap(bbox , zoom = 8 , maptype = "watercolor")
+uganda_map_hybrid <- get_stamenmap(bbox , zoom = 8 , maptype = "toner-hybrid")
+
+full_uganda_map <-
+ggmap(uganda_map_watercolor , extent = "device") +
+  geom_point(data = lumped_uganda , aes(lon , lat , color = water_source) ,  size = 0.01 , alpha = 0.8) +
+  scale_color_manual(
+    guide = guide_legend(override.aes = list(size = 3 , alpha = 1)),
+    values = c("Borehole" = "#000000" , "Protected Spring" = "#fcdc04" , "Undefined Shallow Well" = "#d90000" , "Other" = "#9ca69c")) +
+  theme_map()+
+  labs(title = "Water Sources in Uganda",
+       caption = "Source: Water Point Data Exchange  |\nViz: NearAndDistant.com  |\nGit:  NearAndDistant  |\nTwitter: @NearAndDistant") +
+  borders(regions = "Uganda") +
+  theme(plot.title = element_text(vjust = -24 , hjust = 0.03 , size = 24 , family = "bangers" , face = "bold"),
+        plot.caption = element_text(vjust = 28 , hjust = 0.01 , size = 8 , face = "bold"),
+        legend.position = c(0.01,0.95),
+        legend.justification = c(0,0.95),
+        legend.background = element_rect(fill = "transparent" , color = "transparent"),
+        legend.box.margin = margin(0,0,0,0, unit = "mm"),
+        legend.text = element_text(size = 12 , family = "bangers"),
+        legend.key = element_rect(fill = "transparent" , color = "transparent"),
+        legend.title = element_blank(),
+        plot.margin = margin(-0.35, -1, -0.575, -0.625, unit = "in"))
+
+# Uganda Facet
+lumped_uganda <- 
+  water.uganda %>%
+  mutate(water_source = fct_lump(water_source , 3)) %>%
+  replace_na(list(water_source = "Other")) %>%
+  mutate(water_source = factor(water_source , levels = c("Borehole" , "Protected Spring" , "Undefined Shallow Well" , "Other")))
+
+lumped_uganda_map <- 
+  ggmap(uganda_map_watercolor) +
+  geom_point(data = lumped_uganda , aes(lon , lat , color = water_source) ,  size = 0.001 , alpha = 0.8) +
+  facet_wrap(~water_source , ncol = 1)+
+  scale_color_manual(values = c("Borehole" = "#000000" , "Protected Spring" = "#fcdc04" , "Undefined Shallow Well" = "#d90000" , "Other" = "#9ca69c")) +
+  theme_map()+
+  borders(regions = "Uganda")+
+  theme(legend.position = "none",
+        strip.background = element_blank(),
+        strip.text = element_blank(),
+        plot.margin = margin(0,-3,-0.15,-7.7, unit = "in"))
+
+gridExtra::grid.arrange(full_uganda_map , lumped_uganda_map , layout_matrix = cbind(1,2), widths = c(0.75,0.75))
