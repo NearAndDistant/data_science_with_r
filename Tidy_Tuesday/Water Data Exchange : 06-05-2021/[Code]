@@ -6,12 +6,13 @@ library(tidyverse)
 library(lubridate)
 library(countrycode)
 library(ggmap)
+library(ggthemes)
 library(showtext); showtext_auto() ; font_add_google("Caveat" , "caveat")
                                      font_add_google("Julius Sans One" , "julius")
                                      
 water <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-05-04/water.csv')
 
-### Wrangle
+############################# Wrangle
 water.cleaned <- 
 water %>%
   mutate(report_date = mdy(report_date)) %>%
@@ -26,7 +27,7 @@ water %>%
          lon < max(africa_map$long),
          lon > min(africa_map$long))
 
-### Visualisation
+############################# Visualisation
 africa_map <-
 map_data("world") %>%
   mutate(continent = countrycode(region , "country.name" , "continent")) %>%
@@ -60,7 +61,7 @@ water.uganda <-
 # Uganda Map Data
 bbox <- c(left = 29.5 , bottom = -2 , right = 35 , top = 4.5)
 uganda_map <- get_stamenmap(bbox , zoom = 8)
-uganda_map_v2 <- get_stamenmap(bbox , zoom = 8 , maptype = "terrain-lines")
+uganda_map_v2 <- get_stamenmap(bbox , zoom = 8 , maptype = "toner-lines")
 uganda_map_watercolor <- get_stamenmap(bbox , zoom = 8 , maptype = "watercolor")
 uganda_map_hybrid <- get_stamenmap(bbox , zoom = 8 , maptype = "toner-hybrid")
 
@@ -90,7 +91,8 @@ lumped_uganda <-
   water.uganda %>%
   mutate(water_source = fct_lump(water_source , 3)) %>%
   replace_na(list(water_source = "Other")) %>%
-  mutate(water_source = factor(water_source , levels = c("Borehole" , "Protected Spring" , "Undefined Shallow Well" , "Other")))
+  mutate(water_source = factor(water_source , levels = c("Borehole" , "Protected Spring" , "Undefined Shallow Well" , "Other")),
+         status_id = factor(status_id , levels = c("n" , "y")))
 
 lumped_uganda_map <- 
   ggmap(uganda_map_watercolor) +
@@ -106,3 +108,74 @@ lumped_uganda_map <-
 
 gridExtra::grid.arrange(full_uganda_map , lumped_uganda_map , layout_matrix = cbind(1,2), widths = c(0.75,0.75))
 
+############################# Second Visualisation ; Functional Characteristics 
+uganda.model <-
+lumped_uganda %>%
+  filter(status_id %in% c("y" , "n")) %>%
+  mutate(pay = case_when(str_detect(pay , "^No") ~ "No",
+                         str_detect(pay , "^Yes") ~ "Yes",
+                         is.na(pay) ~ pay, TRUE ~ "Complex Arrangement"),
+         status_id = if_else(status_id == "y" , "Functional" , "Non-Functional")) %>%
+  mutate_if(is.character , as.factor) %>%
+  select(-country , -status, -report_date)
+
+# Functional Characteristics 
+uganda_facets <-
+uganda.model %>%
+  select(status_id , water_source , water_tech , pay , installer) %>%
+  mutate(installer = if_else(is.na(installer), "No Data" , as.character(installer)),
+         pay = if_else(is.na(pay), "No Data" , as.character(pay)),
+         water_tech = if_else(is.na(water_tech), "No Data" , as.character(water_tech)),
+         installer = if_else(installer == "other", "Other" , as.character(installer)),
+         installer = if_else(installer == "Ugandan Water Project (rehabilitation)", "Ugandan Water Project" , as.character(installer)),
+         installer = if_else(installer == "local_govt", "Local Government" , as.character(installer)),
+         installer = fct_lump(installer , 5)) %>%
+  pivot_longer(water_source:installer , names_to = "features" , values_to = "type") %>%
+  group_by(features , type , status_id) %>%
+  summarise(n = n()) %>%
+  pivot_wider(names_from = status_id , values_from = n ) %>%
+  mutate(availability = y/sum(y,n)) %>%
+  arrange(desc(availability)) %>%
+  ungroup() %>%
+  mutate(features = if_else(features == "water_source", "Water Source" , as.character(features)),
+         features = if_else(features == "water_tech", "Water Tech" , as.character(features)),
+         order = row_number()) %>%
+  pivot_longer(cols = n:y , names_to = "status_id") %>%
+  ggplot(aes(reorder(type, -order), value , fill = status_id)) +
+  geom_col(position = "fill" , alpha = 0.75) +
+  scale_x_discrete(position = "top") +
+  facet_grid(rows = vars(features) , switch = "y" , scales = "free_y" , space = "free_y") +
+  scale_fill_manual(values = c("y" = "#a1bdd5" , "n" = "#8d5d64")) +
+  coord_flip() +
+  theme_minimal()+
+  theme(
+    legend.position = "none",
+    strip.text = element_text(family = "julius" , face = "bold" , size = 12),
+    axis.title = element_blank(),
+    plot.margin = margin(3,0,2,0, unit = "cm"))
+
+# Functional Map
+functional_uganda_map <-
+  ggmap(uganda_map_v2 , extent = "device") +
+  geom_point(data = uganda.model , aes(lon , lat , color = status_id) ,  size = 0.2 , alpha = 0.5) +
+  scale_color_manual(
+    guide = guide_legend(override.aes = list(size = 4 , alpha = 1)),
+    values = c("Functional" = "#a1bdd5" , "Non-Functional" = "#8d5d64")) +
+  theme_map()+
+  labs(title = "Vyanzo vya Maji vya Kazi nchini Uganda; Functional Water Sources in Uganda",
+       subtitle = "Do the characteristics of a water source influence the up-keep and continued function of a water source in Uganda?",
+       caption = "Source: Water Point Data Exchange  | Viz: NearAndDistant.com  | Git:  NearAndDistant  | Twitter: @NearAndDistant") +
+  borders(regions = "Uganda") +
+    theme(plot.title = element_text(vjust = 5 , hjust = 0.03 , size = 20 , family = "julius" , face = "bold"),
+          plot.subtitle = element_text(vjust = 7 , hjust = 0.02 , size = 12 , family = "julius" , face = "bold"),
+          plot.caption = element_text(vjust = -12 , hjust = 0.01 , size = 8 , family = "julius" , face = "bold"),
+          legend.position = c(0.01,0.82),
+          legend.justification = c(0,0.93),
+          legend.background = element_rect(fill = "transparent" , color = "transparent"),
+          legend.box.margin = margin(0,0,0,0, unit = "mm"),
+          legend.text = element_text(size = 7 , family = "julius" , face = "bold"),
+          legend.key = element_rect(fill = "transparent" , color = "transparent"),
+          legend.title = element_blank(),
+          plot.margin = margin(16,-5,16,0, unit = "mm"))
+
+gridExtra::grid.arrange(functional_uganda_map , uganda_facets , layout_matrix = cbind(1,2), widths = c(0.75,0.75))
