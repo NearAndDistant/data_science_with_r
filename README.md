@@ -4,6 +4,8 @@
 
 Using Data from the WSDX to visualise Ugandas water sources recorded in the central database:[Git Code](https://github.com/NearAndDistant/data_science_with_r/blob/main/Tidy_Tuesday/Water%20Data%20Exchange%20:%2006-05-2021/%5BCode%5D)
 
+![Functional Water Sources](https://user-images.githubusercontent.com/79040885/117575728-08638b80-b0db-11eb-8f41-166c37834879.png)
+
 ![Uganda Panel FVV](https://user-images.githubusercontent.com/79040885/117344118-f72d3b80-ae9c-11eb-86da-fdd3265ce20f.png)
 
 ### May 2021 : CEO Departures (1996-2019)
