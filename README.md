@@ -1,5 +1,11 @@
 # Data Science with R: Projects 
 
+### May 2021 : Broadband Speed Availability
+
+Using data from Microsoft via The Verge to create county visualisation of broadband speed access (25/mbs) while also showing the linear model association of this access with poverty rates from SAIPE: [Git Code](https://github.com/NearAndDistant/data_science_with_r/tree/main/Tidy_Tuesday/Week20%20:%20Broadband%20Speeds%20Access)
+
+![Broadband Availability](https://user-images.githubusercontent.com/79040885/118794539-94bb3e80-b891-11eb-8618-b41c9e4afe07.png)
+
 ### May 2021 : Water Point Data Exchange (WPDx)
 
 Using Data from the WPDx to visualise Ugandas water sources recorded in the central database: [Git Code](https://github.com/NearAndDistant/data_science_with_r/blob/main/Tidy_Tuesday/Water%20Data%20Exchange%20:%2006-05-2021/%5BCode%5D)
