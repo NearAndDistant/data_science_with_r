@@ -1,0 +1,241 @@
+---
+title: "US Broadband"
+author: "NearAndDistant"
+date: "15/05/2021"
+output: html_document
+---
+
+```{r setup, results = 'hide' , include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(janitor)
+library(scales)
+library(zipcodeR)
+library(tidycensus)
+theme_set(theme_minimal())
+```
+
+# US Broadband
+
+Based on article from The Verge:
+https://www.theverge.com/22418074/broadband-gap-america-map-county-microsoft-data
+
+```{r Tidy Tuesday Dataset}
+tuesdata <- tidytuesdayR::tt_load(2021, week = 20)
+broadband_county <- tuesdata$broadband
+broadband_zip <- tuesdata$broadband_zip
+```
+
+## Wrangle
+
+```{Datasets Import, echo=FALSE}
+# broadband county import
+broadband_county_clean <-
+broadband_county %>%
+  clean_names() %>%
+  rename(state = st) %>%
+  mutate(state = state.name[match(state, state.abb)],
+         broadband_availability_per_fcc = parse_number(broadband_availability_per_fcc , na = "-"),
+         broadband_usage = parse_number(broadband_usage , na = "-"),
+         county_id = sprintf("%05d" , county_id))
+
+# broadband zipcode import
+broadband_zipcode_clean <-
+  broadband_zip %>%
+  clean_names() %>%
+  rename(state = st) %>%
+  mutate(state = state.name[match(state, state.abb)],
+         state = if_else(is.na(state) , "District of Columbia" , state),
+         postal_code = sprintf("%05d" , postal_code)) %>%
+  inner_join(zip_code_db %>% select(-state , -county), by = c(postal_code = "zipcode"))
+
+# county pop import
+county_pop <-
+  readxl::read_excel("~/Downloads/co-est2019-annres.xlsx" , skip = 3) %>%
+  select(county = ...1 , pop_2017 = `2017` , pop_2019 = `2019`) %>%
+  separate(county , c("county_name" , "state") , sep = ", ") %>%
+  mutate(county_name = str_remove(county_name , "^\\."))
+
+# county poverty 2017 import
+county_povery_2017 <-
+  readxl::read_excel("~/Downloads/est17all.xls" , skip = 3) %>%
+  janitor::clean_names() %>%
+  select(postal_code , name , poverty_percent_all_ages) %>%
+  rename(county_name = name , state = postal_code , poverty_rate = poverty_percent_all_ages) %>%
+  mutate(state = state.name[match(state, state.abb)],
+         poverty_rate = parse_number(poverty_rate , na = "."),
+         poverty_rate = poverty_rate/100) %>%
+  filter(str_detect(county_name , "County"))
+
+# county poverty 2019 import
+county_povery_2019 <-
+  readxl::read_excel("~/Downloads/est19all.xls" , skip = 3) %>%
+  janitor::clean_names() %>%
+  select(postal_code , name , poverty_percent_all_ages) %>%
+  rename(county_name = name , state = postal_code , poverty_rate = poverty_percent_all_ages) %>%
+  mutate(state = state.name[match(state, state.abb)],
+         poverty_rate = parse_number(poverty_rate , na = "."),
+         poverty_rate = poverty_rate/100) %>%
+  filter(str_detect(county_name , "County"))
+
+# Join county_pop_2017 & broadband data together
+broadband_pop_pov <-
+broadband_county_clean %>%
+  left_join(county_pop , by = c("county_name" , "state")) %>%
+  left_join(county_povery_2017 , by = c("county_name" , "state")) %>%
+  left_join(county_povery_2019 , by = c("county_name" , "state")) %>%
+  rename(poverty_rate_2017 = poverty_rate.x , poverty_rate_2019 = poverty_rate.y) %>%
+  mutate(county_name = paste(str_remove(county_name , " County $") , ", " , state)) %>%
+  arrange(desc(pop_2017))
+
+```
+
+## Exploratory Data Analysis
+
+```{r Exploratory Data Analysis}
+# Broadband Availability 2017
+broadband_pop_pov %>%
+  arrange(desc(poverty_rate_2017)) %>%
+  ggplot(aes(broadband_availability_per_fcc , poverty_rate_2017)) +
+  geom_point() +
+  geom_smooth(method = "lm" , se = FALSE) +
+  #geom_text(aes(label = county_name) , check_overlap = TRUE , vjust = 1 , hjust =1) +
+  scale_y_continuous(labels = percent_format()) +
+  scale_x_continuous(labels = percent_format()) +
+  expand_limits(x = 0,y = 0) +
+  labs(subtitle = "Broadband Availability by Poverty Rate within each County in the United States, 2017",
+       y = "Poverty Rate 2017",
+       x = "Broadband Availability 2017")
+
+lm(broadband_availability_per_fcc ~ poverty_rate_2017 , broadband_with_population)
+
+# Broadband Usage 2019
+broadband_usage <-
+broadband_pop_pov %>%
+  arrange(desc(poverty_rate_2019)) %>%
+  ggplot(aes(poverty_rate_2019 , broadband_usage)) +
+  geom_jitter(aes(color = broadband_usage)) +
+  scale_color_viridis_c(option = "viridis" , begin = 1 , end = 0) +
+  geom_smooth(method = "lm" , se = TRUE , color = "red") +
+  scale_y_continuous(labels = percent_format() , limits = c(0,1)) +
+  scale_x_continuous(labels = percent_format() , limits = c(0,.50)) +
+  expand_limits(x = 0, y = 0) +
+  labs(
+       y = "Broadband at 25/mbs Availabile 2019",
+       x = "Poverty Rate 2019") +
+  theme(
+    legend.position = "none",
+    plot.title = element_text(size = 10),
+    panel.grid.minor = element_blank(),
+    plot.margin = margin(c(2,2,2,1), unit = "cm")
+  )
+
+# Poverty Marginal Plot 
+ggmargin <-
+  ggMarginal(broadband_usage , 
+          type = "densigram" , 
+          size = 5,
+          xparams = list(fill = "#1F968BFF", alpha = 0.85 , size = 0.25),
+          yparams = list(fill = "#1F968BFF" , alpha = 0.85 , size = 0.25))
+
+broadband_pop <-
+broadband_pop_pov %>%
+  arrange(desc(pop_2019)) %>%
+  ggplot(aes(pop_2019 , broadband_usage)) +
+  geom_jitter(aes(color = broadband_usage)) +
+  scale_color_viridis_c(option = "viridis" , begin = 1 , end = 0) +
+  geom_smooth(method ="lm"  , se = TRUE , color = "red") +
+  scale_y_continuous(labels = percent_format() , limits = c(0,1)) +
+  scale_x_log10(labels = comma) +
+  expand_limits(x = 0, y = 0) +
+  labs(
+       y = "Broadband Usage 2019",
+       x = "Population 2019") +
+  theme(
+    legend.position = "none",
+    plot.title = element_text(size = 10),
+    panel.grid.minor = element_blank(),
+    plot.margin = margin(c(2,2,2,1), unit = "cm")
+  )
+
+ggmargin_pop <-
+  ggMarginal(broadband_pop , 
+          type = "densigram" , 
+          size = 5,
+          xparams = list(color = NA , fill = "#1F968BFF" , alpha = 0.85),
+          yparams = list(color = NA , fill = "#1F968BFF" , alpha = 0.85))
+
+
+tidy(lm(broadband_usage ~ poverty_rate_2019 , broadband_pop_pov))
+
+```
+
+## Maps
+
+```{r Maps}
+library(tigris)
+library(sf)
+library(ggthemes)
+library(ggExtra)
+library(ggtext)
+library(showtext); showtext_auto() ; font_add_google("Cutive Mono" , "curtive")
+                                     font_add_google("Julius Sans One" , "julius")
+
+counties <- counties()
+
+counties <-
+counties %>%
+    inner_join(broadband_pop_pov , by = c(GEOID= "county_id"))
+
+# poverty Rate 2017
+poverty_map <-
+counties %>%
+  filter(!state %in% c("Alaska" , "Hawaii")) %>%
+  st_simplify(dTolerance = 0.025) %>%
+  ggplot(aes(fill = poverty_rate_2017)) +
+  scale_fill_viridis_b(option = "magma" , begin = 1 , end = 0) +
+  geom_sf(size = 0.05) +
+  theme_map() +
+  coord_sf()
+
+# Broadband Availability
+broadband_avail_map <-
+counties %>%
+  filter(!state %in% c("Alaska" , "Hawaii")) %>%
+  st_simplify(dTolerance = 0.025) %>%
+  ggplot(aes(fill = broadband_availability_per_fcc <= 0.15)) +
+  scale_fill_manual(values = c("grey90" , "red")) +
+  geom_sf(size = 0.05) +
+  labs(fill = "Broadband Availability (%)") +
+  theme_map() +
+  coord_sf()
+
+broadband_usage_map <-
+counties %>%
+  filter(!state %in% c("Alaska" , "Hawaii")) %>%
+  st_simplify(dTolerance = 0.025) %>%
+  ggplot(aes(fill = broadband_usage)) +
+  scale_fill_viridis_b(option = "viridis" , begin = 1 , end = 0) +
+  geom_sf(size = 0.05) +
+  annotate("text" , x = -128 , y = 27 , label = text , family = "curtive" , hjust = 0 , size = 3.5) +
+  labs(title = "Broadband Availability per County in the United States",
+       caption = caption,
+       fill = "Access to fixed broadband usage at 25 Mbps (%)") +
+  theme_map() +
+  coord_sf()+
+  theme(plot.title = element_text(size = 20 , family = "julius" , color = "grey50" , vjust = -1 , hjust = 0.1),
+        plot.caption = element_text(hjust = 0.09 , size = 9 , family = "julius"),
+        legend.title = element_text(family = "julius" , color = "grey20" , vjust = 0.75 , hjust = 1),
+        legend.text = element_text(family = "julius" , color = "grey20"),
+        legend.box.margin = margin(0,0,0,-10, unit = "mm"),
+        legend.position = "bottom",
+        legend.justification = c(0.5,0),
+        plot.margin = margin(0,0,0,-12, unit = "mm"))
+
+text <- "This map shows Microsofts data on access to the internet at\nbroadband speed (defined as a 25Mbps download speed by the\nFederal Communications Commission) within each US county.\nWe can see clearly in which counties access to the internet\nat relaible speeds has become a part of everyday life. \n\nThe graph to the right shows a linear model of broadband speed\navailability by the county poverty rate. The red line is the linear\nestimate showing, on average, that a 1% increase in poverty\nis associated with a 1.53% decrease in broadband speeds availability,\nproducing a poverty trap for those already struggling."
+
+caption <- "Source: Microsoft via The Verge  | Viz: NearAndDistant.com  | Git:  NearAndDistant  | Twitter: @NearAndDistant"
+
+gridExtra::grid.arrange(broadband_usage_map , ggmargin , layout_matrix = rbind(c(1,NULL,NULL,NULL) , c(1,NULL,NULL,2)) , widths = c(1.5,NULL,0.45) , heights = c(1 , 0.5))
+  
+```
