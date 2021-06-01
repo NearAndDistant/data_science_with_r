@@ -1,5 +1,11 @@
 # Data Science with R: Projects 
 
+### June 2021 : Super Mario Kart R
+
+Originally Mario Kart 64 was called Super Mario Kart R (Rendered), missed a trick I say! Using a Decision Tree fitted with recursive partitioning to predict whether sneaky KartRs used a shortcut[Git Code](https://github.com/NearAndDistant/data_science_with_r/tree/main/Tidy_Tuesday/Week%2022%20:%20Super%20Mario%20Kart%20R)
+
+![mario64_rpart_final_panel](https://user-images.githubusercontent.com/79040885/120328413-b29d9000-c2e2-11eb-864d-86c66a78ec79.png)
+
 ### May 2021 : Broadband Speed Availability
 
 Using data from Microsoft via The Verge to create county visualisation of broadband speed access (25/mbs) while also showing the linear model association of this access with poverty rates from SAIPE: [Git Code](https://github.com/NearAndDistant/data_science_with_r/tree/main/Tidy_Tuesday/Week20%20:%20Broadband%20Speeds%20Access)
