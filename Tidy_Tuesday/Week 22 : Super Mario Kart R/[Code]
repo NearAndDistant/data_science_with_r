@@ -1,0 +1,297 @@
+---
+title: "Mario Kart 64 World Records, Decision Tree Model"
+author: "NearAndDistant"
+date: "29/05/2021"
+output: html_document
+---
+Can we predict the likelihood of a world record being set within a map in Mario Kart 64 through running the full track or through running a shortcut.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE , warning = FALSE , message = FALSE , dpi = 200 , fig.height = 5 , fig.width = 8)
+
+library(tidyverse)
+theme_set(theme_minimal())
+```
+
+## Importing Data
+```{r}
+tuesdata <- tidytuesdayR::tt_load(2021, week = 22)
+records <- tuesdata$records
+```
+
+## EDA
+Establishing to what extent has each track had shortcuts found within it.
+
+```{r shortcut found}
+records %>%
+  ggplot(aes(shortcut , fill = shortcut)) +
+  geom_bar(show.legend = FALSE) +
+  facet_wrap(~track)
+```
+#### No shortcut found in:
+ * Banshee Boardwalk
+ * Bowser's Castle
+ * Koopa Troopa Beach
+ * Moo Moo Farm
+
+```{r}
+library(magick)
+library(magrittr)
+library(Cairo)
+library(showtext) ; showtext_auto() ; font_add_google("Mina" , "mina")
+                                      font_add_google("Quantico" , "quantico")
+                                      font_add_google("Comic Neue" , "comic")
+                                      font_add_google("Skranji" , "skranji")
+color_palette <- "#e6060f" #"#E4000f"
+
+
+records_plot <- 
+records %>%
+  filter(type == "Three Lap") %>%
+  mutate(type = toupper(type),
+         shortcut = toupper(paste0("shortcut: ", shortcut))) %>%
+  ggplot(aes(date , time , color = shortcut)) +
+  geom_line(size = 2 , show.legend = TRUE) +
+  facet_wrap(~track)+
+  guides(color = guide_legend(override.aes = list(size = 4))) +
+  scale_color_manual(values = c("white" , "black")) +
+  expand_limits(limits = c(0,0)) +
+  labs(
+    #title = "Super Mario Kart R",
+    #subtitle = "Mario Kart 64 World Records (Three Laps)",
+    caption = "Source: mkwrs.com  ||  Viz: NearAndDistant.com  |  Git:  NearAndDistant  |  Twitter: @NearAndDistant",
+    x = NULL,
+    y = "Track Time (seconds)"
+  ) +
+  theme(
+    text = element_text(family = "mina" , color = "white"),
+    #plot.title = element_text(size = 29 , color = "white" , face = "bold" , vjust = 5 , hjust = 1),
+    #plot.subtitle = element_text(size = 18 , color = "white" , face = "bold" , vjust = 2 , hjust = 1),
+    plot.caption = element_text(size = 10 , face = "bold" , hjust = -.4, vjust = -7),
+    panel.background = element_rect(fill = color_palette , color = "white" , size = 2),
+    plot.background = element_rect(fill = color_palette , color = color_palette),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.title.y = element_text(size = 14 , face = "bold" , vjust = 2.5),
+    axis.text = element_text(size = 16 , face = "bold" , color = "white"),
+    axis.text.x = element_text(vjust = -2 , size = 12),
+    strip.text = element_text(size = 14 , color = "white" , face = "bold"),
+    strip.text.x = element_text(hjust = 0.95 , color = "white"),
+    strip.background.x = element_rect(fill = color_palette , color = color_palette),
+    strip.background.y = element_rect(fill = color_palette , color = color_palette),
+    legend.title = element_blank(),
+    legend.text = element_text(size = 12 , face = "bold"),
+    legend.direction = "horizontal",
+    legend.position = c(0.86 , 1.07),
+    plot.margin = margin(50,10,15,45, unit = "mm") #85
+  ) 
+
+### Adding Logo
+
+mariokart64_logo <- 
+  image_read("https://www.clipartmax.com/png/full/106-1060582_mario-cart-clip-art.png") %>%
+  image_scale("900")
+
+mario64_records_plot <- image_read("mario64_red_world_records.png")
+
+#mario64_panel <-
+mario64_records_plot %>%
+  image_composite(mariokart64_logo , offset = "+0+30")
+
+
+```
+
+## Model
+First we create our training budget using initial_split, this buckets the dataset into 'training' and 'testing' datasets.
+
+```{r}
+library(tidymodels)
+
+set.seed(123)
+
+mario_split <-
+records %>%
+  filter(type == "Three Lap") %>%
+  select(track , shortcut , date , time) %>%
+  mutate_if(is.character , as.factor) %>%
+  initial_split(strata = shortcut)
+
+mario_training <- training(mario_split)
+mario_testing <- testing(mario_split)
+
+```
+
+### Bootstrapping on our Training Data
+
+Using bootstrapping, bootstraps(), we create multiple datasets of size n (where n is equal to the size of the training set) by simulating variance through replacement. The bootstrap sample is taken from the original by using sampling with replacement (e.g. we might 'resample' 5 times from [1,2,3,4,5] and get [2,5,4,4,1]), so, assuming N is sufficiently large, for all practical purposes there is virtually zero probability that it will be identical to the original "real" sample. This allows us to train our learning algorithm on X−1 parts while keeping 1 part away from training to test upon (e.g. compute the misclassification rate). This will give us an estimate of the error rate of of trained algorithm. Due to this we can repeat our training as many times as we would like and compute the average of the results without ruining our efficacy.
+
+```{r}
+set.seed(456)
+
+mario_training_folds <- bootstraps(mario_training , strata = shortcut)
+mario_training_folds # Fit / Assess
+
+```
+
+### Decision Tree Model
+
+We will be using rpart(), recursive partitioning, to mathmetically fit out Decision Tree algorthmic model. Recursive Partitioning is a fundamental tool in data mining helping us explore the stucture of a set of data, while developing decision rules for predicting a categorical (classification tree, which we will be using here) or continuous (regression tree) outcome. 
+
+```{r}
+decision_tree_spec <-
+  decision_tree(cost_complexity = tune() , 
+                tree_depth = tune()) %>% # tune() is used to specify at a later date
+  set_engine("rpart") %>%
+  set_mode("classification")
+
+tree_grid <-
+  grid_regular(cost_complexity() , tree_depth() , levels = 7)
+
+mario_wf <-
+  workflow() %>%
+  add_model(decision_tree_spec) %>%
+  add_formula(shortcut ~ .) # explain shortcut by everything else
+
+```
+
+### Train
+
+The workflow will take the 49 decision tree models (of different cost complexity and depth - see {r tree_grid}) and using the 25 bootstrapped samples {r mario_training_folds}) we created fit and assess each of the models against each of the bootstrapped samples. This means we get each model tested 25 times (or 49*25 = 1,225 total assessments).
+
+```{r}
+doParallel::registerDoParallel()
+
+tree_result <-
+tune_grid(mario_wf , # take the decision tree model
+          resamples = mario_training_folds, # take the bootstrapped folds we created from the training dataset
+          grid = tree_grid, # possible values
+          control = control_grid(save_pred = TRUE)) 
+
+```
+
+## Choose a final model
+
+The plot below shows us a graphical display of how each of our model specifications did against the 25 sample datasets. We can see that a tree depth of 8 was had the most accuracy and therefore we would like to choose this method given that the ROC curve for 8 levels was stable across samples i.e. it did not differ in being able to classify.
+
+### Collect Metrics (Accuracy , ROC)
+
+```{r collect metrics}
+collect_metrics(tree_result) # display all models
+show_best(tree_result , metric = "accuracy") # display best models
+autoplot(tree_result) # visualise models
+```
+
+### Collect Predictions
+
+```{r}
+collect_predictions(tree_result) %>%
+  group_by(id) %>% # group by bootstrap (each of the 25)
+  roc_curve(shortcut, .pred_No) %>% # predictive probability of "No"
+  autoplot()
+```
+
+### Choose final tree
+
+This is where we have chosen our final model (model 27), and we allow it to fit itself one last time to the training dataset and then test itself on the, yet unseen, testing dataset we kept aside, mario_testing .
+
+```{r}
+final_tree_model <- 
+select_best(tree_result , metric = "accuracy")
+
+final_model <- 
+mario_wf %>%
+  finalize_workflow(final_tree_model) %>%
+  last_fit(mario_split) # fit one time on the training data and tests one time on the testing data
+
+collect_metrics(final_model)
+```
+
+```{r}
+final_fit_wf <- final_model$.workflow[[1]]
+
+predict(final_fit_wf , mario_testing[5:10,])
+```
+
+## Visualising Our Tree Model
+### Partial-Dependence Plot
+
+```{r}
+library(DALEXtra)
+
+mario_model_explainer <-
+explain_tidymodels(
+  final_fit_wf , 
+  data = dplyr::select(mario_training , -shortcut) ,
+  y = as.integer(mario_training$shortcut)
+)
+```
+
+```{r}
+library(RColorBrewer)
+
+partial_dependence_plot <-
+  model_profile(mario_model_explainer , 
+              variables = "time" , 
+              N = NULL , 
+              groups = "track")
+
+plot(partial_dependence_plot_type)
+
+rpart_plot <- 
+as_tibble(partial_dependence_plot$agr_profiles) %>%
+  janitor::clean_names() %>%
+  mutate(label = str_remove(label , "workflow_")) %>%
+  filter(!label %in% c("Banshee Boardwalk" , "Bowser's Castle" , "Koopa Troopa Beach" , "Moo Moo Farm")) %>%
+  ggplot(aes(x , yhat , color = groups)) +
+  geom_line(size = 2, show.legend = TRUE , position = position_jitter(height = 0.025)) +
+  scale_color_brewer(palette = "Set3") +
+  #scale_color_grey(start = 1, end = 0) +
+  labs(
+    title = "Super Mario Kart R",
+    caption = "Mario Kart 64 World Records (Three Laps)\n Note: Original game title was Super Mario Kart R",
+    subtitle = "Below: Using recursive partitioning to predict if a\nshortcut is (1.00) or is not (0.00) being used\n\nWe can therefore see minumum times for an official\nthree lap race for example Rainbow road shows a\n300sec minimum. Finishing before that point indicates\na high degree (97% accuracy) that a shortcut being used",
+    x = "Track Time (seconds)"
+  ) +
+  theme(
+    text = element_text(family = "mina" , color = "white" , face = "bold"),
+    plot.title = element_text(size = 29 , color = "white" , face = "bold" , vjust = 18.5 , hjust = 1),
+    plot.caption = element_text(size = 18 , color = "white" , face = "bold" , vjust = 140 , hjust = 1),
+    plot.subtitle = element_text(family = "mina" , size = 12 , color = "white" , face = "bold" , hjust = 1 , vjust = 8),
+    panel.background = element_rect(fill = color_palette , color = color_palette),
+    plot.background = element_rect(fill = color_palette , color = color_palette),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.title = element_text(size = 10),
+    axis.title.y = element_blank(),
+    axis.title.x = element_text(vjust = -1 , size = 10),
+    axis.text = element_text(size = 12 , face = "bold" , color = "white"),
+    strip.text = element_text(size = 14 , face = "bold" , color = "white"),
+    legend.position = "top",
+    legend.text.align = 1,
+    legend.justification = 1,
+    legend.key.height = unit(2.5 , "mm"),
+    legend.key.width = unit(10 , "mm"),
+    legend.direction = "vertical",
+    legend.title = element_blank(),
+    legend.text = element_text(size = 9 , face = "bold"),
+    plot.margin = margin(55,7.5,-2,0, unit = "mm")
+  )
+```
+
+
+```{r}
+
+gridExtra::grid.arrange(records_plot , rpart_plot , nrow = 1 , widths = c(1 , 1/3))
+
+mario64_rpart_panel <- image_read("mario64_rpart_panel.png")
+
+# Logo
+
+mariokart64_logo <- 
+  image_read("https://www.clipartmax.com/png/full/106-1060582_mario-cart-clip-art.png") %>%
+  image_scale("500")
+
+mario64_rpart_panel %>%
+  image_composite(mariokart64_logo , offset = "+0+10")
+
+```
