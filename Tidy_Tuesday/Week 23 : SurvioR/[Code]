@@ -1,0 +1,203 @@
+---
+title: "SurvivoR"
+author: "NearAndDistant"
+date: "05/06/2021"
+output: html_document
+---
+
+```{r Setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(survivoR)
+library(showtext); showtext_auto(); font_add_google("Bebas Neue" , "bebas");
+                                    font_add_google("Rajdhani" , "rajdhani")
+```
+
+```{r Importing , include=FALSE}
+survivor <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-06-01/summary.csv')
+
+viewers <- survivoR::viewers
+castaways <- survivoR::castaways
+
+```
+
+```{r Wrangle}
+
+# Clean castaway 
+castaways_cln <-
+  castaways %>%
+    select(season , season_name , full_name , order , result , personality_type) %>%
+    rename(elimination_order = "order",
+           castaway_place = "result") %>%
+      mutate(
+        personality_type = if_else(full_name == "Laura Boneham", "ISFJ", personality_type),
+        personality_type = if_else(full_name == "Ron Clark", "INTJ", personality_type),
+        ext_int = case_when(
+          personality_type = str_detect(personality_type , "^E") ~ "extravert",
+          personality_type = str_detect(personality_type , "^I") ~ "introvert"),
+        cog_fun = case_when(
+          personality_type = str_detect(personality_type , "\\w\\wF\\w") ~ "feeling",
+          personality_type = str_detect(personality_type , "\\w\\wT\\w") ~ "thinking")
+        )
+
+# Season MBPT
+season_mbpt <-
+  castaways_cln %>%
+    select(season , season_name , ext_int) %>%
+      group_by(season) %>%
+        mutate(contestants = n())%>%
+      group_by(season , ext_int) %>%
+        mutate(mbpt_ext = n()) %>%
+      unique() %>%
+        mutate(mbpt_int = contestants - mbpt_ext,
+               pc_mbpt = mbpt_ext / contestants) %>%
+      ungroup() %>%
+      filter(ext_int == "extravert") %>%
+      select(-ext_int)
+
+# Join MBPT with views
+survivor_views_mbpt <-
+viewers %>%
+  inner_join(season_mbpt , by = c("season" , "season_name"))
+
+```
+
+```{r Extraverts and Survivor}
+library(scales)
+library(ggpubr)
+
+season_mbpt_plot <-
+season_mbpt  %>%
+  ggplot(aes(season , pc_mbpt , color = pc_mbpt)) + 
+  geom_jitter(size = 16 , alpha = 1) +
+  geom_smooth(method = "lm" , se = FALSE , size = 2 , color = "black") +
+    annotate(geom = "rect" , xmin = 40, xmax = 50, ymin = -Inf, ymax = Inf , fill = "grey80" , alpha = 0.5 , color = NA) +
+    geom_jitter(data = prediction_data , size = 16 , color = "#9ac7b4" , alpha = 0.75 , height = sigma) +
+    geom_smooth(data = prediction_data , color = "grey60" , size = 2) +
+  scale_color_viridis_c(option = "cividis" , 
+                        limits = c(0.25 , 0.75) , breaks = c(0.25 , 0.50 , 0.75) , direction = 1 , 
+                        labels = percent_format(accuracy = 1)) +
+  scale_y_continuous(labels = percent_format(accuracy = 1))+
+  scale_x_continuous(limits = c(0,50) , expand = c(0,0)) +
+  coord_cartesian(clip = "off") +
+  labs(
+    title = ": Will it Survive",
+    subtitle = "Percentage of Recruited Extroverts",
+    caption = survivor_text,
+    x = NULL,
+    y = "Percentage of Extroverts",
+    color = "Extrovert (%)")+
+  theme_minimal() +
+  theme(
+    text = element_text(family = "bebas"),
+    plot.title = element_text(size = 42 , vjust = 6 , hjust = 0.38 , face = "bold"),
+    plot.subtitle = element_text(size = 16 , hjust = 0),
+    plot.caption = element_text(size = 10 , vjust = 180 , hjust = 1 , family = "rajdhani" , margin = margin(0,0,-25,0, unit = "mm")),
+    axis.text.x = element_blank(),
+    axis.title.y = element_text(vjust = 8 , size = 12),
+    axis.text.y = element_text(size = 12),
+    panel.grid.minor = element_blank(),
+    legend.position = c(0.25, 1.03),
+    legend.direction = "horizontal",
+    legend.title = element_blank(),
+    legend.text = element_text(size = 10 , face = "bold"),
+    legend.box.margin = margin(0,0,0,0 , unit = "mm"),
+    plot.margin = margin(18,5,0,5, unit = "mm")
+  )
+  
+survivor_text <- 
+str_wrap("The shaded areas below show linear regression models predicting specific features of season 41 (due fall 2021) to 50. The first shows the expected personality of the recuits (extro/introverts). Extroverts have been recruited increasingly over time on Survivor and this has accumulated to give a predicted minimum of 60% of extroverts in future season in our model. The second shows the expected viewers (given previous seasons and contestants) with error intervals (-/+60m) shown with error bars. We can see, if trends continue, Survivor can expect potentially so few viewers that is it cancelled at season 43." , width = 90)
+
+# Modelling
+mdl_ext_int <-
+lm(pc_mbpt ~ season, data = survivor_views_mbpt)
+
+## Model Assessment 
+library(broom)
+
+sigma <-
+mdl_ext_int %>%
+  glance() %>%
+    pull(sigma)
+
+### What we want to explain
+explanatory_data <-
+    expand_grid(season = 41:50)
+
+### Prediction
+prediction_data <-
+  explanatory_data %>%
+    mutate(pc_mbpt = predict(mdl_ext_int , explanatory_data))
+
+```
+
+The association between extraverts and the passing of each season of Survivor started as a 50/50 split between extraverts and introverts and then with each passing season the was a positive association of 0.25% towards more extraverts. This is actually a significant correlation of p-value = 2e-16 (0.0000000000000002). Meaning this did not happen by chance.
+
+```{r Extraverts and Views}
+
+season_views_mbpt_plot <-
+survivor_views_mbpt  %>%
+  ggplot(aes(season , viewers , fill = pc_mbpt)) + 
+  geom_col(alpha = 1) +
+    annotate(geom = "rect" , xmin = 40, xmax = 50, ymin = -Inf, ymax = Inf , fill = "grey80" , alpha = 0.5 , color = NA) +
+    geom_col(data = prediction_data , fill = "#9ac7b4" , color = NA , alpha = 0.75) +
+    geom_errorbar(data = prediction_data , 
+                  aes(ymin = if_else((viewers-sigma2)<0, 0 , viewers-sigma2) , ymax = viewers+sigma2) , 
+                  color = "grey50" , size = 0.25) +
+  scale_fill_viridis_c(option = "cividis" , direction = 1) +
+  scale_x_continuous(limits = c(0,50) , expand = c(0,0)) +
+  coord_cartesian(clip = "off") +
+    labs(
+    subtitle = "Linear Model of Viewers Over Time Accounting for Increasingly Extroverted Contestants",
+    x = "Season",
+    y = "Viewers (millions)")+
+  theme_minimal() +
+  theme(
+    text = element_text(family = "bebas"),
+    plot.subtitle = element_text(size = 16),
+    panel.grid.minor = element_blank(),
+    axis.title.x = element_text(size = 16),
+    axis.text.x = element_text(size = 12),
+    axis.title.y = element_text(vjust = 8 , size = 12),
+    axis.text.y = element_text(size = 12),
+    legend.position = "none",
+    plot.margin = margin(5,5,5,5, unit = "mm")
+  )
+
+# Modelling
+survivor_season_views <- 
+  survivor_views_mbpt %>%
+  group_by(season , pc_mbpt) %>%
+  summarise(total_views = sum(viewers , na.rm = TRUE)) %>%
+  ungroup()
+
+mdl_view_mbpt2 <-
+  lm(total_views ~ pc_mbpt + season + 0, survivor_season_views)
+
+### Assessing
+sigma2 <-
+  mdl_view_mbpt2 %>%
+   glance() %>%
+    pull(sigma)
+
+### Predictions
+prediction_data <-
+  prediction_data %>%
+    mutate(viewers = predict(mdl_view_mbpt2 , prediction_data))
+
+```
+
+
+```{r Grid Arrange}
+library(ggExtra)
+library(magick)
+
+gridExtra::grid.arrange(season_mbpt_plot , season_views_mbpt_plot , 
+                        ncol = 1 , heights = c(1 , 0.75))
+
+survivor_logo <- image_read("survivor_title_logo.png") %>% image_scale("800")
+
+survivor_panel <- image_read("survivor_panel.png")
+
+survivor_panel %>%
+  image_composite(survivor_logo , offset = "+120+50")
