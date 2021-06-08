@@ -2,13 +2,13 @@
 
 ### June 2021 : SuvivoR
 
-Using multiple linear models to predict what persoanlity traits and what viewership to expect on future seasons of Survivor which has at present been running for 40 seasons and due to release it's next in Fall 2021[Git Code](https://github.com/NearAndDistant/data_science_with_r/blob/main/Tidy_Tuesday/Week%2023%20:%20SurvioR/%5BCode%5D)
+Using multiple linear models to predict what persoanlity traits and what viewership to expect on future seasons of Survivor which has at present been running for 40 seasons and due to release it's next in Fall 2021: [Git Code](https://github.com/NearAndDistant/data_science_with_r/blob/main/Tidy_Tuesday/Week%2023%20:%20SurvioR/%5BCode%5D)
 
 ![final_survivor_panel](https://user-images.githubusercontent.com/79040885/121243483-ac388680-c895-11eb-8e30-ced308198883.png)
 
 ### June 2021 : Super Mario Kart R
 
-Originally Mario Kart 64 was called Super Mario Kart R (Rendered), missed a trick I say! Using a Decision Tree fitted with recursive partitioning to predict whether sneaky KartRs used a shortcut[Git Code](https://github.com/NearAndDistant/data_science_with_r/tree/main/Tidy_Tuesday/Week%2022%20:%20Super%20Mario%20Kart%20R)
+Originally Mario Kart 64 was called Super Mario Kart R (Rendered), missed a trick I say! Using a Decision Tree fitted with recursive partitioning to predict whether sneaky KartRs used a shortcut: [Git Code](https://github.com/NearAndDistant/data_science_with_r/tree/main/Tidy_Tuesday/Week%2022%20:%20Super%20Mario%20Kart%20R)
 
 ![mario64_rpart_final_panel](https://user-images.githubusercontent.com/79040885/120328413-b29d9000-c2e2-11eb-864d-86c66a78ec79.png)
 
