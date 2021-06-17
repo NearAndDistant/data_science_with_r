@@ -1,5 +1,11 @@
 # Data Science with R: Projects 
 
+### June 2021 : Ask a Manager
+
+Using a linear model to analyse Ask a Manager data from the technology sector in the UK to determine which is the largest explanatory variable toward differences in salaries within the sector: [Git Code](https://github.com/NearAndDistant/data_science_with_r/tree/main/Tidy_Tuesday/Week%2021%20:%20Ask%20a%20Manager)
+
+![ask_a_manager_panel](https://user-images.githubusercontent.com/79040885/122459863-5a84b000-cfa9-11eb-8e0f-560cfd561bce.png)
+
 ### June 2021 : SuvivoR
 
 Using multiple linear models to predict what persoanlity traits and what viewership to expect on future seasons of Survivor which has at present been running for 40 seasons and due to release it's next in Fall 2021: [Git Code](https://github.com/NearAndDistant/data_science_with_r/blob/main/Tidy_Tuesday/Week%2023%20:%20SurvioR/%5BCode%5D)
