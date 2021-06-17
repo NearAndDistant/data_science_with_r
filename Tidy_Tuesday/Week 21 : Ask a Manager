@@ -1,0 +1,304 @@
+---
+title: "Ask a Manager Survey"
+author: "NearAndDistant"
+date: "13/06/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+theme_set(theme_minimal())
+library(showtext) ; showtext_auto() ; font_add_google("Kaushan Script" , "script")
+                                      font_add_google("Roboto Condensed" , "roboto")
+```
+
+```{r importing data}
+survey <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-05-18/survey.csv')
+```
+
+```{r wrangle}
+library(tidyverse)
+
+### UK dataset
+survey_uk_tech_2021 <-
+  survey %>% 
+    rename("education" = highest_level_of_education_completed,
+           "experience" = years_of_experience_in_field,
+           "age" = how_old_are_you) %>%
+    mutate(
+      age = as.factor(age),
+      experience = factor(experience , 
+                          levels = c("1 year or less" , 
+                                     "2 - 4 years" , 
+                                     "5-7 years" , 
+                                     "8 - 10 years" , 
+                                     "11 - 20 years" , 
+                                     "21 - 30 years" , 
+                                     "31 - 40 years" , 
+                                     "41 years or more")),
+      country = if_else(str_detect(tolower(survey$country) , "united kingdom"), "United Kingdom", country),
+      country = if_else(str_detect(tolower(survey$country) , "uk"), "United Kingdom", country),
+      country = if_else(str_detect(tolower(survey$country) , "englan"), "United Kingdom", country),
+      country = if_else(str_detect(survey$country , "United Kin"), "United Kingdom", country),
+      country = if_else(str_detect(survey$country , "^UK"), "United Kingdom", country),
+      country = if_else(str_detect(tolower(survey$country) , "^wales"), "United Kingdom", country),
+      country = if_else(str_detect(tolower(survey$country) , "^scotland"), "United Kingdom", country),
+      country = if_else(str_detect(tolower(survey$country) , "^northern island"), "United Kingdom", country),
+      country = if_else(country == "Unites kingdom", "United Kingdom", country),
+      country = if_else(country == "Great Britain", "United Kingdom", country),
+      country = if_else(country == "Britain", "United Kingdom", country),
+      country = if_else(country == "U.K.", "United Kingdom", country),
+      country = if_else(country == "U.K", "United Kingdom", country),
+      country = if_else(country == "Isle of Man", "United Kingdom", country),
+      country = if_else(country == "Jersey, Channel islands", "United Kingdom", country)) %>%
+    filter(country == "United Kingdom") %>%
+    filter(currency == "GBP") %>%
+    filter(race == "White") %>% # not large enough sample size of other races in this data subset
+    filter(gender %in% c("Man" , "Woman")) %>% # not large enough sample size of transgender
+    filter(industry %in% c("Computing or Tech")) %>% # Technology Sector only
+    filter(experience != "1 year or less", # <6 data points each gender
+           experience != "41 years or more", # No data for > 41 years
+           experience != "31 - 40 years") %>% # Only 1 data point
+    mutate(other_monetary_comp = replace_na(other_monetary_comp , 0),
+         total_comp = annual_salary + as.numeric(other_monetary_comp)) %>%
+    filter(annual_salary >= 100) %>%
+    mutate(education = if_else(education == "Some college" , "College degree" , education),
+           education = if_else(education == "Professional degree (MD, JD, etc.)" , "College degree" , education)) %>%
+    select(gender , age , education , experience , job_title , total_comp , annual_salary , other_monetary_comp)
+
+survey_test <-
+survey_uk_tech_2021 %>%
+  filter(experience == "11 - 20 years")
+
+```
+
+```{r Options and Palette}
+
+options(scipen = 999)
+
+woman <- "#f28f6b"
+man <- "#92bddf"
+panel <- "#d7d7d7"
+
+```
+
+```{r exploratory models}
+library(broom)
+
+### experience
+mdl_salary_exp <-
+  lm(total_comp ~ experience , data = survey_uk_tech_2021)
+
+summary(mdl_salary_exp)
+
+### age
+mdl_salary_age <-
+  lm(total_comp ~ age, data = survey_uk_tech_2021)
+
+summary(mdl_salary_age)
+
+### gender
+mdl_salary_gender <-
+  lm(total_comp ~ gender, data = survey_uk_tech_2021)
+
+summary(mdl_salary_gender)
+
+### education
+mdl_salary_education <-
+  lm(total_comp ~ education, data = survey_uk_tech_2021)
+
+summary(mdl_salary_education)
+
+### final mdl to use based on R^2
+mdl_salary <-
+  lm(total_comp ~ experience + gender, data = survey_uk_tech_2021)
+
+summary(mdl_salary)
+
+```
+
+total_comp ~ experience = R^2 0.1832 (explaining only 18.32% of variation)
+total_comp ~ age = R^2 0.1441 (explaining only 14.41% of variation)
+total_comp ~ gender = R^2 0.01035 (explaining only 1% of variation)
+total_comp ~ education = R^2 0.0005882 (explaining <1% of variation)
+
+```{r model - outliers and influential cases}
+
+# outliers and influencial cases
+survey_uk_tech_2021 <-
+  survey_uk_tech_2021 %>%
+    mutate(
+      residuals = residuals(mdl_salary),
+      std_residuals = rstandard(mdl_salary),
+      cooks = cooks.distance(mdl_salary)
+    ) 
+
+# std. residuals by cooks distance plot
+survey_uk_tech_2021 %>%
+  ggplot(aes(std_residuals , cooks , color = gender)) +
+  geom_point()
+
+```
+
+### Std Residuals (Outliers)
+sum(survey_uk_tech_2021$std_residuals < -1.96 | 
+    survey_uk_tech_2021$std_residuals > 1.96) = 7
+
+Therefore 252 cases we would expect to fall within -/+2sd (95% CI) and 5% (12 cases) outside, of which only 7 do therefore this is acceptable
+
+### Cooks Distance (Influentials)
+No datapoints are have a Cook's Distance of =>1 therefore no one datapoint is having undue influence on the model
+
+```{r gender analysis}
+
+### male model
+survey_uk_tech_2021_male <-
+  survey_uk_tech_2021 %>%
+  filter(gender == "Man")
+
+### female model
+survey_uk_tech_2021_female <-
+  survey_uk_tech_2021 %>%
+  filter(gender == "Woman")
+
+```
+
+```{r model assessment plots}
+
+### density to check distribution and outliers
+density_dist <- 
+survey_uk_tech_2021 %>%
+  ggplot(aes(std_residuals)) +
+  geom_density(aes(color = gender), size = 1) +
+  #facet_wrap(~experience , scales = "free_x") +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
+  scale_color_manual(values = c(man , woman)) +
+  guides(color = guide_legend(override.aes = list(size = 12))) +
+  labs(
+    title = "Standard Residual Deviation",
+    subtitle = "No Sig. Outliers: < 5% points lie outside +/-2 sd",
+    x = "Standard Deviations",
+    y = "Percentage of Group") +
+  theme(
+    text = element_text(size = 10),
+    axis.title.y = element_text(vjust = 3),
+    axis.title.x = element_text(vjust = -2),
+    panel.grid.minor = element_blank(),
+    panel.grid.major.y = element_blank(),
+    legend.title = element_blank(),
+    legend.text = element_text(size = 14),
+    legend.position = c(0.5,1.65),
+    legend.direction = "horizontal",
+    plot.margin = margin(45,10,0,5, unit = "mm")
+  )
+
+### qq plot
+qq_plot <- 
+survey_uk_tech_2021 %>%
+  ggplot(aes(sample = annual_salary , color = gender)) +
+  geom_qq(alpha = .5 , size = 4) +
+  geom_qq_line() +
+  scale_color_manual(values = c(man , woman)) +
+  labs(
+    title = "QQ Plot",
+    subtitle = "No Sig. Outliers: Distribution Appears Normal",
+    x = "Theoretical Quantile",
+    y = "Standardised Residuals"
+  ) +
+  theme(
+    text = element_text(size = 10),
+    axis.title.y = element_text(vjust = 3),
+    axis.title.x = element_text(vjust = -2),
+    panel.grid.minor = element_blank(),
+    panel.grid.major.y = element_blank(),
+    legend.position = "none",
+    plot.margin = margin(20,10,15,5, unit = "mm")
+  )
+
+```
+
+```{r distribution analysis}
+library(ggtext)
+
+textbox <- "The largest explanatory variable of annual salary is experience in the Ask a Manager dataset which we can explain 18% of the salary variance (R^2).\nThis is tightly linked to age as we would expect. Gender and education level on the otherhand only explain 1% of the salary variance in the data\nrespectively. Although sample sizes and data collection leave much to be desired the data is theoretically normal, linear and has little homoscedasticity\nmeaning it meets core tests to be generalised for the UK technology sector at large with further analysis."
+
+### salary by experience and gender (lm view)
+linear_mdl_annual_salary <-
+survey_uk_tech_2021 %>%
+  ggplot(aes(experience , annual_salary , color = gender , group = gender)) +
+  geom_jitter(size = 4 , alpha = .5) +
+  scale_y_continuous(labels = scales::dollar_format(prefix="£")) +
+  scale_color_manual(values = c(man , woman)) +
+  expand_limits(y = 0) +
+  coord_cartesian(clip = "off") +
+    geom_smooth(method = "lm" , se = FALSE)  +
+  labs(
+    title = "Ask a Manager",
+    subtitle = "UK Annual Salary Distibutions Across Experience and Gender in Technology (Linear Model)",
+    caption = textbox) +
+  theme(
+    text = element_text(size = 14),
+    plot.title = element_text(face = "bold" , size = 34 , vjust = 3.5 , family = "script"),
+    plot.subtitle = element_text(size = 18 , hjust = 0 , vjust = 11.5 , family = "roboto"),
+    plot.caption = element_text(hjust = 0 , vjust = 110 , margin = margin(0,0,0,0, unit = "pt")),
+    axis.title.y = element_blank(),
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank(),
+    panel.grid.minor = element_blank(),
+    legend.position = "none",
+    plot.margin = margin(20,2,-15,10, unit = "mm")
+  ) 
+
+### grouped boxplot on experience bracket
+library(ggforce)
+
+boxplot_dist <-
+survey_uk_tech_2021 %>%
+  ggplot(aes(experience , annual_salary , color = gender , fill = gender)) +
+  geom_boxplot(color = "grey70" , alpha = 0.45) +
+  scale_alpha_manual(values = 0.5) +
+  scale_y_continuous(labels = scales::dollar_format(prefix="£")) +
+    ggforce::geom_sina(alpha = .5 , size = 2) + 
+    stat_summary(geom = "text" , fun.data = n_fun , size = 5 , data = survey_uk_tech_2021_female) +
+    stat_summary(geom = "text" , fun.data = n_fun_m , size = 5 , data = survey_uk_tech_2021_male) +
+    scale_color_manual(values = c(man , woman))  +
+    scale_fill_manual(values = c(man , woman))  +
+  labs(caption = "Source: askamanager.org  ||  Viz: NearAndDistant.com  |  Git:  NearAndDistant  |  Twitter: @NearAndDistant") +
+  theme(
+    text = element_text(size = 14),
+    plot.caption = element_text(hjust = -0.3 , size = 10 , vjust = -13),
+    axis.title.y = element_blank(),
+    axis.title.x = element_blank(),
+    panel.grid.minor = element_blank(),
+    legend.position = "none",
+    plot.margin = margin(10,2,15,10, unit = "mm")
+  ) 
+
+## function to return median and labels
+n_fun <- function(x){
+  return(data.frame(y = 10000, 
+                    label = paste0("n = ",length(x))))}
+
+n_fun_m <- function(x){
+  return(data.frame(y = 140000, 
+                    label = paste0("n = ",length(x))))}
+
+```
+
+```{r model grid arrange}
+
+ask_a_manager_panel <-
+gridExtra::grid.arrange(grobs = list(linear_mdl_annual_salary , boxplot_dist , density_dist , qq_plot) , 
+                        ncols = 3 , 
+                        widths = c(1,1,0.75),
+                        padding = unit(0.2 , "pt"),
+                        layout_matrix = rbind(c(1,1,3), 
+                                              c(2,2,4)))
+```
+
+```{r saving}
+library(here)
+
+ggsave(here("ask_a_manager_survey.png") , ask_a_manager_panel)
+
+```
