@@ -8,7 +8,7 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 theme_set(theme_minimal())
-library(showtext) ; showtext_auto() ; loadfonts(device = "postscript")
+library(showtext) ; showtext_auto() ;
                                       font_add_google("Kaushan Script" , "script")
                                       font_add_google("Roboto Condensed" , "roboto")
 ```
