@@ -1,0 +1,273 @@
+---
+title: "London Pet Rescue"
+author: "NearAndDistant"
+date: "30/06/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(showtext) ; showtext_auto()
+
+font_add_google("Caveat" , "caveat")
+font_add_google("Saira" , "saira")
+
+```
+
+London firefighters encountered a surge in call outs to rescue animals in 2020, figures show.
+
+The London fire brigade (LFB) was involved in 755 such incidents – more than two a day. The number of rescues rose by 20% compared with 2019 when there were 602, with the biggest rise coming in the number of non-domestic animals rescued, according to the data.
+
+```{r import , echo = FALSE}
+library(tidyverse)
+
+animal_rescues <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-06-29/animal_rescues.csv')
+```
+
+```{r wrangle , echo = FALSE}
+
+# wrangle
+animal_rescue_cln <-
+animal_rescues %>%
+  mutate(
+    longitude = na_if(longitude, "NULL"),
+    longitude = na_if(longitude, "0"),
+    latitude  = na_if(latitude, "NULL"),
+    latitude  = na_if(latitude, "0")) %>%
+  mutate(
+    incident_notional_cost = if_else(incident_notional_cost == "NULL" , "0" , incident_notional_cost),
+    incident_notional_cost = as.numeric(incident_notional_cost))
+  mutate(
+    special_service_type = str_to_lower(special_service_type),
+    final_description = str_to_lower(final_description),
+    animal_type = case_when(str_detect(special_service_type, "domestic") ~ "Domestic",
+                            str_detect(special_service_type, "farm") ~ "Farm",
+                            str_detect(special_service_type, "livestock") ~ "Farm",
+                            str_detect(special_service_type, "wild") ~ "Wild",
+                            str_detect(special_service_type, "bird") ~ "Wild"),
+    animal_group_parent = if_else(str_detect(animal_group_parent, "Unknown"), "Unknown", animal_group_parent),
+    animal_group_parent = if_else(str_detect(animal_group_parent, "cat"), "Cat", animal_group_parent),
+    animal_group_parent = as_factor(animal_group_parent),
+    pigeon = if_else(str_detect(final_description, "pigeon"), TRUE, FALSE)) %>%
+  filter(cal_year <= 2020) %>%
+  select(year = cal_year , 
+         animal_type , 
+         animal = animal_group_parent, 
+         pigeon, 
+         description = final_description , 
+         cost = incident_notional_cost , 
+         borough_code , 
+         longitude , 
+         latitude)
+
+```
+
+### Exploratory Data Analysis
+
+First let's see plot the the number of London Fire Brigade call outs since 2010, we will exclude 2021 as this is not a full year, this will give us 10 complete years of data.
+
+```{r eda , echo = FALSE}
+theme_set(theme_minimal())
+
+# % change in incidents
+animal_rescue_cln %>%
+  count(year) %>%
+  arrange(year) %>%
+  mutate(pc_change = (n - lag(n)) / lag(n),
+         pc_change = if_else(is.na(pc_change), 0 , pc_change)) %>%
+    ggplot(aes(year , pc_change)) +
+    geom_line(color = "red") +
+      scale_x_continuous(breaks = seq(2009,2020,1)) +
+      scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
+      labs(x = NULL,
+           y = "% Change (Year on Year)") +
+      theme(panel.grid.minor = element_blank())
+
+# how many per animal 
+animal_rescue_cln %>%
+  filter(animal != "Unknown" &
+         year >= 2010) %>%
+  mutate(animal = fct_lump(animal , 7)) %>%
+  count(year , animal) %>%
+    ggplot(aes(year , n , color = animal)) +
+    geom_line() +
+      guides(color = guide_legend(nrow = 1)) +
+      scale_x_continuous(breaks = seq(2010,2020,5)) +
+      scale_y_log10() +
+      labs(x = NULL,
+           y = "Change (Year on Year)",
+           color = "Animal Rescued") +
+      theme(panel.grid.minor = element_blank(),
+            legend.position = "top")
+
+
+# cost of each animal
+plot_top_cost <-
+animal_rescue_cln %>%
+  filter(year >= 2010) %>%
+  group_by(year , animal) %>%
+  summarise(cost = sum(cost)) %>%
+  group_by(year) %>%
+  slice_max(order_by = cost , n = 2) %>%
+    ggplot(aes(year , cost/1000)) +
+    geom_line(aes(color = animal) , size = 1.5) +
+    scale_color_manual(values = c(Dog = "#440154FF" , Cat = "#1F968BFF" , Bird = "#73D055FF")) +
+      scale_x_continuous(breaks = seq(2009,2020,1)) +
+      scale_y_log10(labels = scales::label_dollar(prefix="£" , accuracy = 1 , suffix = "k")) +
+      expand_limits(y = 0) +
+      guides(color = guide_legend(nrow = 1)) +
+      labs(subtitle = "Greatest Animal Costs Overall in Each Year",
+               x = NULL,
+               y = NULL,
+           color = NULL) +
+      theme(legend.position = "none",
+            legend.justification = "left",
+            plot.subtitle = element_text(size = 14 , family = "saira"),
+            axis.text.x = element_blank(),
+            panel.grid.minor = element_blank(),
+            panel.grid.major.x = element_blank(),
+            plot.margin = margin(2.5,0,2.5,0, unit = "mm"))
+
+```
+
+We can see form the above plot that cats have always cost the most in terms of animal incidents each year. We can also see that since 2013 dogs have given way to birds being the second largest animal expense and this category has continually increased to 2020. We need to understand if this is a specific trend or more general across London and we can show that through maps. To do this we shall turn to London Data Store and the {sf} package.
+
+### Mapping Data
+
+Source: https://s3-eu-west-1.amazonaws.com/londondatastore-upload/statistical-gis-boundaries-london.zip
+
+The 2011 Census output area boundaries were released by ONS on 30 October 2012. The ONS release constituted a single dataset covering the entirety of England and Wales.
+
+The GLA has extracted the boundaries for each London borough and provides them here in MapInfo (.tab) and ESRI ArcGIS (.shp) file formats.
+
+*Included are :*
+Output Area (OA)
+Lower Super Output Area (LSOA)
+Middle-Level Super Output Area (MSOA) boundaries
+London Wards (two files: City of London merged into single area and split into separate wards). There are separate download file for 2014 & 2018 boundaries.
+London Boroughs
+
+Each geography is provided at Extent of the Realm (BFE), Coastline (BFC) and Generalised Coastline (BGC).
+
+More details about 2011 Census geography can be found on the ONS website: http://www.ons.gov.uk/ons/guide-method/geography/products/census/index.html
+
+```{r map , echo = FALSE}
+# download lnd data
+
+library(sf)
+
+# create temp files
+temp <- tempfile(fileext = ".zip")
+
+# download zip file into tempfile using hyperlink
+download.file(url = "https://s3-eu-west-1.amazonaws.com/londondatastore-upload/statistical-gis-boundaries-london.zip", destfile = temp)
+
+#upzip file (need full file for shp) and read into R using read_sf
+lnd_shp <- 
+  read_sf(unzip(temp , 'statistical-gis-boundaries-london/ESRI/London_Borough_Excluding_MHW.shp')) %>%
+  janitor::clean_names() %>%
+  select(name , borough_code = gss_code , geometry)
+
+# plot blank lnd map
+lnd_shp %>%
+ggplot(aes()) +
+  geom_sf(fill = NA) +
+  coord_sf() +
+  theme_void()
+
+```
+
+We now need to merge the geometry data from London Data Store with the London Fire Brigade data.
+
+```{r borough cost per year (2010 to 2020)}
+library(ggtext)
+
+# creating borough cost summary
+borough_cost <-
+animal_rescue_cln %>%
+  group_by(year, borough_code) %>%
+  summarise(spend = sum(cost))
+
+# how has the cost per borough changed over the decade 2010 to 2020
+plot_cost_change <-
+lnd_shp %>%
+  left_join(borough_cost , by = "borough_code") %>%
+  filter(year == 2010 |
+         year == 2020) %>%
+    ggplot(aes(fill = spend)) +
+    geom_sf() +
+    coord_sf() +
+    facet_wrap(~year) +
+    scale_fill_viridis_c(option = "mako" , direction = -1 , labels = scales::dollar_format(prefix="£")) +
+    labs(
+      title = "Dogs Becoming Better Boys, Birds Becoming Trapped And Cats... Well Cats Do What They Want",
+      subtitle = "Cost of Animal Rescue by the London Fire Brigade (2010 to 2020)",
+      tag = alt_txt,
+      fill = "Cost (pa)") +
+      theme_void() +
+      theme(
+        legend.position = c(1.1 , 0.30),
+        plot.title = element_text(size = 29, face = "bold" , vjust = 2.5 , family = "caveat"),
+        plot.subtitle = element_text(size = 14 , vjust = 4 , family = "saira"),
+        plot.tag = element_textbox_simple(size = 9,
+                                          family = "saira",
+                                          width = unit(2.4, 'in'), 
+                                          padding = margin(0, 0, 0, 0),
+                                          margin = margin(0, 0, 0, 0)),
+        plot.tag.position = c(0.12 , 0.4),
+        panel.spacing.y = unit(4, "lines"),
+        strip.text = element_text(size = 16, face = "bold"),
+        plot.margin = margin(8,0,2,0, unit = "mm"))
+
+alt_txt <- 
+"In 2020, the London Fire Brigade was called out 758 times for animal rescue (on average over twice a day), representing a 33% incease in cases and a 74% increase in cost to the UK taxpayer (shown in the top graphic). Although cats have, and always will, do what they want (increasingly, as seen by the second chart), more insidious is the 34% increase in bird emergencies, rising from 141 in 2019 to 214 in 2020. Bird incidents have overtaken dog incidents since 2011 and these have increased ever since.\n\nThe RSPCA has reported that this may be mostly accounted for by anti-bird netting techniques, which birds fly into and get trapped in. As much as they struggle, birds cannot escape in most cases, and, suspended in mid-air, they die a slow, agonising death from starvation or strangulation. More than a third of bird rescues in 2020 were net-related, with one incident in June involving 10 trapped birds. As well as the humane aspects, we can see from the top graphic that this is increasingly driving up costs for London boroughs."
+
+```
+
+```{r animal breakdown for all years}
+
+# creating animal summary
+animal_summary_all_years <-
+animal_rescue_cln %>%
+  filter(year >= 2010,
+         animal != "Unknown") %>%
+  count(year , borough_code , animal) %>%
+  group_by(year , borough_code) %>%
+  slice_max(order_by = n)
+
+# do boroughs have different animals causing havoc
+plot_animal_incidents_per_year <-
+lnd_shp %>%
+  left_join(animal_summary_all_years , by = "borough_code") %>%
+    ggplot(aes(fill = animal)) +
+    geom_sf() +
+    coord_sf() +
+    facet_wrap(~year , nrow = 1) +
+    scale_fill_viridis_d(option = "viridis") +
+    guides(fill = guide_legend(nrow = 1)) +
+    labs(
+      subtitle = "Greatest Number of Animal Incidents in Each London Borough",
+      caption = "Source: https://data.london.gov.uk  ||  Viz: NearAndDistant.com  |  Git:  NearAndDistant  |  Twitter: @NearAndDistant") +
+      theme_void() +
+      theme(
+            legend.position = "bottom",
+            legend.justification = "left",
+            legend.title = element_blank(),
+            plot.subtitle = element_text(size = 14 , family = "saira"),
+            plot.caption = element_text(hjust = 1 , family = "saira" , vjust = 1),
+            strip.text = element_text(size = 16),
+            plot.margin = margin(2.5,0,2.5,0, unit = "mm")
+            )
+
+```
+
+```{r grid}
+library(patchwork)
+
+plot_cost_change + 
+plot_top_cost + 
+plot_animal_incidents_per_year + 
+plot_layout(nrow = 3 , heights = c(1.25 , 0.25 , 0.5))
+
+```
