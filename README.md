@@ -1,5 +1,11 @@
 # Data Science with R: Projects 
 
+### July 2021 : London Animal Rescue
+
+The London fire brigade (LFB) was involved in 755 animal incidents in 2020 – more than two a day. The number of rescues rose by 20% compared with 2019 when there were 602, with the biggest rise coming in the number of non-domestic animals rescued, according to the data. Here we analyse that breakdown: [Git Code](https://github.com/NearAndDistant/data_science_with_r/blob/main/Tidy_Tuesday/Week%2027%20:%20London%20Animal%20Rescue/%5BCode%5D)
+
+![animal_rescue](https://user-images.githubusercontent.com/79040885/124317817-ab7ed180-db6f-11eb-8539-166393ad2b81.png)
+
 ### June 2021 : Ask a Manager
 
 Using a linear model to analyse Ask a Manager data from the technology sector in the UK to determine which is the largest explanatory variable toward differences in salaries within the sector: [Git Code](https://github.com/NearAndDistant/data_science_with_r/tree/main/Tidy_Tuesday/Week%2021%20:%20Ask%20a%20Manager)
