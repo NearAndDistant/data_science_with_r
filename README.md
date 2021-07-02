@@ -55,7 +55,7 @@ Using Richard Helbrock's data (2021) on USPS office established and discontinued
 ### April 2021 : Deforestation : Exploring the relative change of forest area from 1993 to 2020 
 
 Modelling relative forest area change within countries, contributing to a 0.15Bn net loss:
-[Git Code](https://github.com/NearAndDistant/data_science_with_r/blob/main/Tidy_Tuesday/2021-04-10%20:%20Deforestation/%5BCode%5D)
+[Git Code](https://github.com/NearAndDistant/data_science_with_r/blob/main/Tidy_Tuesday/Week%2015%20:%20Deforestation/%5BCode%5D)
 
 ![Deforestation](https://user-images.githubusercontent.com/79040885/114275471-76ecf500-9a1a-11eb-9fce-c40396502906.png)
 
