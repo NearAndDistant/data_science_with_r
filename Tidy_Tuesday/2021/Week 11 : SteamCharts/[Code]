@@ -1,0 +1,119 @@
+---
+title: "Week 12 Video Games"
+author: "NearAndDistant"
+date: "05/07/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r Importing and Cleaning}
+
+library(tidyverse)
+library(zoo)
+
+games <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-03-16/games.csv')
+
+ROR <- 
+games %>%
+  filter(gamename == "Risk of Rain" |
+         gamename == "Risk of Rain 2") %>%
+  mutate(date = parse_date(paste0(month, " ", year), "%B %Y"),
+         peak_avg_diff = peak - avg) %>%
+  pivot_longer(cols = c(avg, peak_avg_diff), names_to = "metric") %>%
+  select(game = gamename , date , metric , value)
+
+```
+
+```{r visualisation}
+
+library(ggstream)
+library(lubridate)
+library(showtext) ; showtext_auto() ; font_add_google("Amatic SC" , "amatic")
+
+# color palette
+background <- "#188596"
+palette <- c("#a583b1" , "#886689" , "#177c94" , "#013251")
+
+plot_ROR <-
+ROR %>%
+  ggplot(aes(date , value , fill = interaction(metric , game))) +
+  geom_stream(extra_span = 0, alpha = 0.25) +
+  geom_stream(type = "ridge" , bw = 0.75) +
+  scale_fill_manual(values = palette) +
+  scale_y_continuous(labels = scales::label_number_si(), 
+                     breaks = seq(0 , 100000, 25000), 
+                     position = "right") +
+  ############## caption
+  annotate("text" , x = date("2019-12-20"), y = -22500, label = "Source: streamcharts.com\nGraphic: @NearAndDistant", hjust = 0, size = 5, color = "white" , family = "amatic") +
+  ############## annotation sub
+  annotate("text" , x = date("2015-01-01"), y = -37500, label = "average and peak concurrent players on Steam", hjust = 0, size = 9, color = "white" , family = "amatic") +
+  ############## annotation ROR1 legend
+  annotate("text" ,      x = date("2015-10-01"), y = -45000, label = "ROR1", hjust = 0, size = 6, color = "white" , family = "amatic") +
+  annotate("linerange" , x = date("2016-01-15"), ymin = -47000, ymax = -43000, size = 6 , color = palette[2]) +
+  ############## annotation ROR2 legend
+  annotate("text" , x = date("2016-08-01"), y = -45000, label = "ROR2", hjust = 0, size = 6, color = "white" , family = "amatic") +
+  annotate("linerange" , x = date("2016-11-15"), ymin = -47000, ymax = -43000, size = 6 , color = palette[4]) +
+  ############## annotation, peak
+  annotate("linerange", 
+           x = date("2021-03-01"), 
+           ymin = 0, 
+           ymax = sum(ROR$value[which(ROR$date == "2021-02-01" & ROR$game == "Risk of Rain 2")])*4.5, 
+           color = colorspace::darken(palette[3], 0.05), size = 2) +
+  annotate("text", 
+           x = date("2021-03-01"), 
+           y = sum(ROR$value[which(ROR$date == "2021-02-01" & ROR$game == "Risk of Rain 2")])*4.5, 
+           angle = 90, 
+           label = "peak", 
+           color = "white", size = 8, family = "amatic", hjust = -0.1) +
+  ############## annotation, average
+  annotate("linerange", 
+           x = date("2021-03-31"), 
+           ymin = 0, 
+           ymax = sum(ROR$value[which(ROR$date == "2021-02-01" & ROR$game == "Risk of Rain 2" & ROR$metric == "avg")])*3, 
+           color = colorspace::darken(palette[4], 0.05), size = 2) +
+  annotate("text", 
+           x = date("2021-03-31"), 
+           y = sum(ROR$value[which(ROR$date == "2021-02-01" & ROR$game == "Risk of Rain 2" & ROR$metric == "avg")])*3, 
+           angle = 90,
+           label = "average", 
+           color = "white", size = 8 , family = "amatic" , hjust = -0.1) +
+  ############## theme
+  theme_void() +
+  theme(plot.background = element_rect(fill = background),
+        legend.position = "none",
+        axis.title = element_blank(),
+        axis.text.x = element_text(hjust = 0 , face = "bold" , size = 20 , color = "white" , family = "amatic"),
+        axis.text.y.right = element_text(hjust = 0 , face = "bold" , size = 20 , color = "white" , family = "amatic"),
+        panel.grid = element_blank(),
+        plot.margin = margin(2.5,1,1,0, unit = "cm"))
+
+```
+
+Stack Overflow that came in helpful for logo:
+https://stackoverflow.com/questions/53852428/insert-image-png-ggplot2-cowplot
+
+```{r cowplot - logo}
+
+library(cowplot)
+
+ggdraw(plot_ROR) +
+draw_image("https://img.pngio.com/risk-of-rain-roguelike-like-action-platformer-beta-03050-7-10-risk-of-rain-png-820_190.png", # logo
+           x = 0.0875, y = -0.515, height = 1.5, width = 0.5) +
+draw_image("https://preview.redd.it/fshetppawyg61.png?auto=webp&s=f0d70e97d21bf9f3d63b9e84fde8e295f0608572" , # commando
+           x = 0.65, y = 0.275, height = 0.1, width = 0.1) +
+draw_image("https://art.ngfiles.com/images/1408000/1408375_shutfucc_the-fun-guy-risk-of-rain-2.png?f1598837758", # tech
+           x = 0.69, y = 0.265, height = 0.075, width = 0.075) +
+draw_image("http://1.bp.blogspot.com/-5R6eENtzWxk/V1ZuDUb3qJI/AAAAAAAAAEg/AvBbXWw8K1U25cc5SqEbW815erZNJctZQCK4B/s1600/CustomSprites-sizecomp2x.gif", # enemies
+           x = 0.045 , y = 0.175 , height = 0.65 , width = 0.65)
+
+```
+
+
+```{r save}
+
+ggsave(here::here("ROR.png"), dpi = 320, height = 10, width = 16)
+
+```
