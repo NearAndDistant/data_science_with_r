@@ -1,5 +1,11 @@
 # Data Science with R: Projects 
 
+### SteamCharts : Risk of Rain
+
+The data this week comes from Steam streaming by way of Kaggle and originally came from SteamCharts. The data was scraped and uploaded to Kaggle and we're using it here to display the average and peak concurrent players of Risk of Rain! [Code](https://github.com/NearAndDistant/data_science_with_r/tree/main/Tidy_Tuesday/2021/Week%2012:%20SteamCharts)
+
+![ROR](https://user-images.githubusercontent.com/79040885/124523472-1f7add00-ddef-11eb-956c-e81a39172e13.png)
+
 ### July 2021 : London Animal Rescue
 
 The London fire brigade (LFB) was involved in 755 animal incidents in 2020 – more than two a day. The number of rescues rose by 20% compared with 2019 when there were 602, with the biggest rise coming in the number of non-domestic animals rescued, according to the data. Here we analyse that breakdown: [Git Code](https://github.com/NearAndDistant/data_science_with_r/tree/main/Tidy_Tuesday/2021/Week%2027%20:%20London%20Animal%20Rescue)
