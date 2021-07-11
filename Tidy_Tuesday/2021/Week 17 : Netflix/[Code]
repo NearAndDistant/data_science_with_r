@@ -1,0 +1,90 @@
+---
+title: "Netflix Text Analysis"
+author: "NearAndDistant"
+date: "11/07/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r importing}
+netflix_titles <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-04-20/netflix_titles.csv')
+```
+
+```{r cleaning / wrangling}
+
+library(tidyverse)
+library(lubridate)
+
+netflix <- 
+netflix_titles %>%
+  ### eda1 : distribution of release over years
+  mutate(
+    date_added = parse_date(date_added , format = "%B %d, %Y"),
+    month = as_factor(month(date_added)),
+    year = as_factor(year(date_added))) %>%
+  ### eda2 : string split and unnest for distribution of genre
+  mutate(listed_in = strsplit(listed_in, ",")) %>%
+  unnest(listed_in) %>%
+  mutate(listed_in = trimws(listed_in)) %>%
+  rename(genre = listed_in)
+
+```
+
+```{r}
+library(tidytext)
+
+words_unnested <- 
+netflix %>%
+  unnest_tokens("word" , description) %>%
+  anti_join(stop_words , by = "word")
+
+```
+
+```{r}
+library(widyr)
+library(tidygraph)
+library(ggraph)
+
+showtext::showtext_auto()
+sysfonts::font_add_google("Staatliches" , "staat")
+
+netflix_logo_alpha <- magick::image_read("https://wallpapercave.com/wp/wp5063339.png") %>% 
+                      magick::image_colorize(opacity = 20, color = 'white')
+
+set.seed(42)
+
+words_unnested %>%
+  distinct(word , title , genre) %>%
+  add_count(word , name = "word_total" , sort = TRUE) %>%
+  mutate(word = str_to_title(word)) %>%
+  filter(word_total >= 50) %>%
+  widyr::pairwise_cor(word , title , sort = TRUE) %>%
+  filter(correlation > 0.1) %>%
+  igraph::graph_from_data_frame() %>%
+  ggraph::ggraph(layout = "fr") +
+  annotation_custom(grid::rasterGrob(netflix_logo_alpha, 
+                               width = unit(1,"npc"), 
+                               height = unit(1,"npc")), 
+                    -Inf, Inf, -Inf, Inf) +
+  ggraph::geom_edge_link(aes(alpha = correlation) , color = "white") +
+  ggraph::geom_node_point(color = "white") +
+  ggraph::geom_node_text(aes(label = name), repel = TRUE , color = "white" , size = 4) +
+  labs(
+    title = "Netflix Text Analysis",
+    subtitle = "Which Words Chill Together Within The Netflix Catelogue Descriptions?",
+    caption = "Source: kaggle.com | Graphic: @NearAndDistant") +
+  theme(plot.title = element_text(family = "staat" , face = "bold" , color = colorspace::lighten("#E50914", 0.20) , size = 42, vjust = 6, hjust = -.05),
+        plot.subtitle = element_text(family = "staat" , color = "white" , size = 16, vjust = 16 , hjust = -.06),
+        plot.caption = element_text(family = "staat" , color = "white", size = 10 , vjust = -30 , hjust = -.04),
+        panel.background = element_rect(fill = "grey20" , color = "grey20"),
+        plot.background = element_rect(fill = "grey20" , color = "grey20"),
+        legend.position = "none",
+        plot.margin = margin(1,1.5,1.5,1.5, unit = "cm"))
+
+```
+
+```{r}
+ggsave(here::here("Netflix.png"), dpi = 320, height = 10, width = 16)
