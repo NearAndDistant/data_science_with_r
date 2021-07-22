@@ -1,5 +1,11 @@
 # Data Science with R: Projects
 
+### Scooby Doo : Monster Motives
+
+Using ScoobyPedia data can we predict a monsters motives using the episodes IMDB score and year of release? [Code](https://github.com/NearAndDistant/data_science_with_r/blob/main/Tidy_Tuesday/2021/Week%2029%20:%20Scooby%20Doo/%5BCode%5D)
+
+![Netflix](https://user-images.githubusercontent.com/79040885/126696140-e542a05a-0d86-407c-abc6-3345bb2812ab.png)
+
 ### Netflix : Text Analysis
 
 Using Netflix catelogue data since 2019 to analyse decriptive text to see where words are found together, we can start to see which words are most commonly found together and use this as a predictive feature of which genre or rating the item is: [Code](https://github.com/NearAndDistant/data_science_with_r/blob/main/Tidy_Tuesday/2021/Week%2017%20:%20Netflix/%5BCode%5D)
