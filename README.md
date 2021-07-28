@@ -1,5 +1,11 @@
 # Data Science with R: Projects
 
+### US Drought : gganimation
+
+Using data produced jointly by the National Drought Mitigation Center (NDMC) at the University of Nebraska-Lincoln, the National Oceanic and Atmospheric Administration (NOAA), and the U.S. Department of Agriculture (USDA) to map and animate drought levels in the US by county. [Code](https://github.com/NearAndDistant/data_science_with_r/blob/main/Tidy_Tuesday/2021/Week%2030%20:%20US%20Drought/%5BCode%5D)
+
+![us_droughts_simp](https://user-images.githubusercontent.com/79040885/127356307-9b119a72-57e5-4da3-ab4c-4818d0624cdd.gif)
+
 ### Scooby Doo : Monster Motives
 
 Using ScoobyPedia data can we predict a monsters motives using the episodes IMDB score and year of release? [Code](https://github.com/NearAndDistant/data_science_with_r/blob/main/Tidy_Tuesday/2021/Week%2029%20:%20Scooby%20Doo/%5BCode%5D)
