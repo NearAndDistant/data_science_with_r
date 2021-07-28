@@ -1,0 +1,117 @@
+---
+title: "US Drought"
+author: "NearAndDistant"
+date: "24/07/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Statistics downloaded from here:
+https://droughtmonitor.unl.edu/DmData/DataDownload/ComprehensiveStatistics.aspx
+
+Filter: “County” for the spatial scale, “percent Pop” for statistics type, and “Categorical” for the csv file.
+
+Choose your own start date but anything past a year will take a lot to render and be a slower process.
+
+#### Import & Clean
+```{r}
+library(tidyverse)
+
+us_drought <- 
+read_csv(here::here("dm_export_20190101_20210727.csv")) %>%
+  pivot_longer(cols = c(None : D4) , names_to = "drought_lvl" , values_to = "pct_pop") %>%
+  janitor::clean_names() %>%
+  mutate(fips = sprintf("%05s" , fips)) %>%
+  mutate(drought_lvl = factor(drought_lvl , 
+                              levels = c("None" , "D0" , "D1" , "D2" , "D3" , "D4"),
+                              labels = c("None", "Abnormal", "Moderate", "Severe", "Extreme", "Exceptional"))) %>%
+  group_by(valid_start , fips) %>%
+  slice_max(order_by = pct_pop , n = 1) %>%
+  ungroup()
+
+```
+
+#### Maps
+```{r}
+library(tigris)
+library(sf)
+theme_set(theme_minimal())
+
+# import state and counties from tigris so we can filter out states we do not want to use (Alaska , Hawaii etc)
+counties <- tigris::counties() %>% select(state_id = STATEFP , county_id = GEOID , county_name = NAMELSAD)
+
+# lookup_code for "Alaska" , "Hawaii" , "Puerto Rico" to strip them out of map
+#https://www.nrcs.usda.gov/wps/portal/nrcs/detail/?cid=nrcs143_013697
+
+#The code for Alaska is '02'.
+#The code for Hawaii is '15'. 
+#The code for Puerto Rico is '72'.
+
+counties <- 
+  counties %>%
+  rename(fips = county_id) %>%
+  filter(!state_id %in% c("02" , "15" , "72")) %>%
+  st_simplify(dTolerance = 0.060)
+
+```
+
+```{r}
+
+doParallel::registerDoParallel()
+
+# join into one table of geoinfo and droughts
+counties_drought <- 
+  counties %>% 
+  inner_join(us_drought, by = "fips") 
+
+```
+
+
+```{r}
+library(showtext); showtext_auto() ; font_add_google("Amatic SC" , "amatic")
+
+library(gganimate)
+library(transformr)
+
+drought_map_simp <-
+counties_drought %>%
+  #filter(valid_start >= "2020-07-01") %>% # testing filter for gganimate
+  #filter(valid_start == max(valid_start)) %>% # for static map
+  ggplot(aes(fill = drought_lvl)) +
+  geom_sf() +
+  borders("state") +
+  transition_manual(valid_start) +
+  scale_fill_viridis_d(option = "rocket" , begin = 0 , end = 1) +
+  labs(
+    title = "County Drought Levels Over Time Throughout the United States",
+    subtitle = "{current_frame}",
+    caption = "Source: droughtmonitor.unl.edu | Graphic: @NearandDistant",
+    fill = "Drought Level") +
+  ggthemes::theme_map() +
+  coord_sf() +
+  theme(
+    #text = element_text(family = "BM Hanna Air Regular"),
+    plot.title = element_text(vjust = -110 , size = 60 , face = "bold"),
+    plot.subtitle = element_text(vjust = -105 , hjust = 0.95 , size = 60 , face = "bold"),
+    plot.caption = element_text(vjust = -10 , hjust = 0 , size = 40),
+    legend.title = element_text(size = 50 , face = "bold"),
+    legend.text = element_text(size = 40),
+    legend.position = c(0,0.05),
+    plot.margin = margin(-2,0,1,0, unit = "cm"))
+
+```
+
+#### Animation
+```{r}
+library(gifski)
+
+drought_map %>%
+animate(fps = 55 , nframe = 300 , 
+        height = 2000 , width = 2340,
+        start_pause = 1, end_pause = 1,
+        renderer = gifski_renderer(here::here("us_droughts_simp.gif")))
+
+```
