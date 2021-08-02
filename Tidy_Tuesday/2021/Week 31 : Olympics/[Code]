@@ -1,0 +1,119 @@
+---
+title: "Olympic Fighting"
+author: "NearAndDistant"
+date: "01/08/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#### Importing
+```{r}
+library(tidyverse)
+
+olympics_raw <- read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-07-27/olympics.csv')
+
+olympics <-
+  olympics_raw %>% 
+  filter(sport %in% c("Wrestling" , "Boxing" , "Judo" , "Taekwondo")) %>%
+    mutate(sex = factor(sex , levels = c("M" , "F"))) %>%
+    mutate(weight_class = str_replace(event , paste(sport, "Men's") , "")) %>%
+    mutate(weight_class = str_replace(weight_class , paste(sport, "Women's") , "")) %>%
+    mutate(weight_class = str_replace(weight_class , ",.*" , "")) %>%
+    mutate(weight_class = trimws(weight_class , "both")) %>%
+    mutate(weight_class = if_else(weight_class == "Middleweight A" | 
+                                    weight_class == "Middleweight B" , "Middleweight" , weight_class)) %>%
+    filter(!weight_class %in% c("Unlimited Class" , "Open Class" , "All-Around")) %>%
+    #mutate(sport = fct_lump(sport , 15)) %>%
+    select(year , name , medal , sex , sport , weight_class) %>%
+    count(year , sport , sex)
+
+```
+
+#### EDA
+```{r}
+
+m_boxing    <- min(olympics$year[which(olympics$sex == "M" & olympics$sport == "Boxing")])   
+f_boxing    <- min(olympics$year[which(olympics$sex == "F" & olympics$sport == "Boxing")])   
+m_wrestling <- min(olympics$year[which(olympics$sex == "M" & olympics$sport == "Wrestling")])
+f_wrestling <- min(olympics$year[which(olympics$sex == "F" & olympics$sport == "Wrestling")])
+m_judo      <- min(olympics$year[which(olympics$sex == "M" & olympics$sport == "Judo")])     
+f_judo      <- min(olympics$year[which(olympics$sex == "F" & olympics$sport == "Judo")])     
+m_taekwondo <- min(olympics$year[which(olympics$sex == "M" & olympics$sport == "Taekwondo")])
+f_taekwondo <- min(olympics$year[which(olympics$sex == "F" & olympics$sport == "Taekwondo")])
+
+```
+
+
+```{r}
+library(cowplot)
+library(ggstream)
+library(colorspace)
+library(showtext) ; showtext_auto() ; font_add_google("Amatic SC" , "amatic")
+theme_set(theme_minimal())
+
+background <- "white"
+text_color <- "grey50"
+palette <- c("#0286c3" , lighten("#0286c3" , 0.5)  , 
+             "#fbb22e" , lighten( "#fbb22e" , 0.5) , 
+             "#168c39" , lighten("#168c39" , 0.5)  ,
+             "#ee2f4d" , lighten("#ee2f4d" , 0.5)  )
+
+ggdraw(
+olympics %>%
+  ggplot(aes(year , n)) +
+  geom_stream(aes(fill = interaction(sex , sport)), bw = 0.45 , n_grid = 200) +
+  scale_fill_manual(values = palette) +
+  scale_x_continuous(breaks = c(1904 , seq(1925 , 2000 , 25), 2016)) +
+  labs(title = "When Females Started Competing in Olympic Combat" , fill = "Sex & Sport") + 
+  # World War gaps in data
+  geom_rect(aes(xmin = 1908 , xmax = 1920 , ymin = -1000 , ymax = 1000) , fill = background) +
+  annotate(geom = "text" , x = 1914, y = 0 , label = "WWI" , size = 4 , color = "black" , family = "amatic") +
+  geom_rect(aes(xmin = 1936 , xmax = 1948 , ymin = -1000 , ymax = 1000) , fill = background) +
+  annotate(geom = "text" , x = 1942, y = 0 , label = "WWII" , size = 4 , color = "black" , family = "amatic") +
+  # Arrows & annotations to males / females starting to compete
+  # Boxing & Wrestling
+  geom_curve(aes(x = m_boxing + 4, y = 500, xend = m_boxing, yend = 75), arrow = arrow(length = unit(0.02, "npc")), size = 0.5, color = "black") +
+  annotate(geom = "text" , x = m_boxing + 6, y = 600 , label = "1904\nBoxing & Wrestling\n(Men Only)" , size = 4 , color = "black" , family = "amatic") +
+  geom_curve(aes(x = f_boxing - 8 , y = 1700, xend = f_boxing - 4, yend = 1200), arrow = arrow(length = unit(0.02, "npc")), size = 0.5, color = "black") +
+  annotate(geom = "text" , x = f_boxing - 8, y = 1900 , label = "2012 Boxing\n(Females Enter)" , size = 4 , color = "black" , family = "amatic") +
+  geom_curve(aes(x = f_wrestling - 4 , y = -1700, xend = f_wrestling - 4, yend = -1250), arrow = arrow(length = unit(0.02, "npc")), size = 0.5, color = "black") +
+  annotate(geom = "text" , x = f_wrestling - 4, y = -1900 , label = "2004 Wrestling\n(Females Enter)" , size = 4 , color = "black" , family = "amatic") +
+  # Judo
+  geom_curve(aes(x = m_judo - 10 , y = 1200, xend = m_judo - 5 , yend = 0), arrow = arrow(length = unit(0.02, "npc")), size = 0.5, color = "black") +
+  annotate(geom = "text" , x = m_judo - 7, y = 1200 , label = "1964 Judo\n(Males Only)" , size = 4 , color = "black" , family = "amatic") +
+  geom_curve(aes(x = f_judo - 15 , y = 1000, xend = f_judo - 10 , yend = -200), arrow = arrow(length = unit(0.02, "npc")), size = 0.5, color = "black") +
+  annotate(geom = "text" , x = f_judo - 14, y = 1200 , label = "1992 Judo\n(Females Enter)" , size = 4 , color = "black" , family = "amatic") +
+  # Taekwondo (males / females together)
+  geom_curve(aes(x = f_taekwondo - 15 , y = -1200, xend = f_taekwondo - 3, yend = -500), arrow = arrow(length = unit(0.02, "npc")), size = 0.5, color = "black") +
+  annotate(geom = "text" , x = f_taekwondo - 20, y = -1200 , label = "2000 Taekwondo\n(Males / Females Enter)" , size = 4 , color = "black" , family = "amatic") +
+  # theme 
+  theme(
+    text = element_text(color = text_color , face = "bold"),
+    plot.title = element_text(family = "amatic" , size = 40 , hjust = 0.24),
+    panel.background = element_rect(fill = background , color = background),
+    plot.background = element_rect(fill = background , color = background),
+    axis.title = element_blank(),
+    axis.text.y = element_blank(),
+    axis.text.x = element_text(color = text_color , face = "bold" , family = "amatic" , size = 30 , vjust = 3),
+    panel.grid.minor = element_blank(),
+    panel.grid.major = element_blank(),
+    legend.position = c(0.11,0.225),
+    legend.title = element_text(family = "amatic" , size = 20 , face = "bold"),
+    legend.text = element_text(family = "amatic" , size = 20),
+    plot.margin = margin(1,0,1,0, unit = "cm"))) +
+    annotate(geom = "text" , label = "Source: kaggle.com | Graphic: @NearAndDistant" , x = 0.14 , y = 0.11 , family = "amatic" , size = 6) +
+# annotate images
+draw_image(image = "https://www.pngall.com/wp-content/uploads/2017/05/Olympic-Rings-Download-PNG.png",
+           x = -0.05 , y = 0.675 , height = 0.25 , width = 0.25)
+
+```
+
+#### Saving
+```{r}
+
+ggsave(here::here("Olympic.png"), dpi = 360, height = 10, width = 16)
+
+```
