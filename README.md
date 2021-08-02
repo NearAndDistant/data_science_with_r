@@ -1,5 +1,11 @@
 # Data Science with R: Projects
 
+## Olympics : Females Entering the Ring
+
+Using Kaggle data on the Olympics since 1904 we can visualise the enterance of difference in when sexes started competing in Olympic combat sports and their relative count. [Code](https://github.com/NearAndDistant/data_science_with_r/blob/main/Tidy_Tuesday/2021/Week%2031%20:%20Olympics/%5BCode%5D)
+
+![Olympic](https://user-images.githubusercontent.com/79040885/127882014-9a38e87c-dd85-4e2a-80dc-c6c426bd74ba.png)
+
 ### US Drought : gganimation
 
 Using data produced jointly by the National Drought Mitigation Center (NDMC) at the University of Nebraska-Lincoln, the National Oceanic and Atmospheric Administration (NOAA), and the U.S. Department of Agriculture (USDA) to map and animate drought levels in the US by county. [Code](https://github.com/NearAndDistant/data_science_with_r/blob/main/Tidy_Tuesday/2021/Week%2030%20:%20US%20Drought/%5BCode%5D)
