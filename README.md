@@ -1,5 +1,9 @@
 # Data Science with R: Projects
 
+## Paralympics : When Paralympians started competing in the Olympics
+
+Using International Paralympic Committee data on the Olympics since 1980 we can visualise the enterance of difference in when sexes started competing in Olympic sports and their relative count.[Code](https://github.com/NearAndDistant/data_science_with_r/blob/main/Tidy_Tuesday/2021/Week%2031%20:%20Paralympics/%5BCode%5D)
+
 ## Olympics : Females Entering the Ring
 
 Using Kaggle data on the Olympics since 1904 we can visualise the enterance of difference in when sexes started competing in Olympic combat sports and their relative count. [Code](https://github.com/NearAndDistant/data_science_with_r/blob/main/Tidy_Tuesday/2021/Week%2031%20:%20Olympics/%5BCode%5D)
