@@ -109,7 +109,7 @@ paralympics %>%
     legend.title = element_blank(),
     legend.text = element_text(family = "amatic" , size = 20),
     plot.margin = margin(1,0,1,0, unit = "cm"))) +
-    annotate(geom = "text" , label = "Source: kaggle.com | Graphic: @NearAndDistant" , x = 0.14 , y = 0.11 , family = "amatic" , size = 6) +
+    annotate(geom = "text" , label = "Source: ipc-services.org | Graphic: @NearAndDistant" , x = 0.14 , y = 0.11 , family = "amatic" , size = 6) +
 # annotate images
 draw_image(image = "https://upload.wikimedia.org/wikipedia/commons/thumb/b/be/Logo_of_the_International_Paralympic_Committee_2019.svg/1280px-Logo_of_the_International_Paralympic_Committee_2019.svg.png", x = 0.030 , y = 0.80 , height = 0.20 , width = 0.15)
 
