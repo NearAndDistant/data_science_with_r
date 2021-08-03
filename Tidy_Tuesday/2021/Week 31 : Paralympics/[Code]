@@ -1,0 +1,123 @@
+---
+title: "Paralympics"
+author: "NearAndDistant"
+date: "03/08/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#### Importing
+```{r}
+library(tidyverse)
+
+paralympics_raw <- read_csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-08-03/athletes.csv")
+
+paralympics <-
+  paralympics_raw %>% 
+  rename(sport = type , sex = gender , name = athlete) %>%
+  mutate(sport = str_to_title(sport)) %>%
+  #mutate(sport = str_replace(sport , " " , "_")) %>%
+  mutate(name = str_to_title(name)) %>%
+    select(year , name , medal , sex , sport) %>%
+    count(year , sport)
+
+```
+
+#### EDA
+```{r}
+
+#### Mixed
+Mix_Rugby          <- min(paralympics$year[which(paralympics$sex == "Mixed" & paralympics$sport == "Rugby")])   
+
+#### Equal Starts
+Archery            <- min(paralympics$year[which(paralympics$sex == "Men"   & paralympics$sport == "Archery")])   
+Athletics          <- min(paralympics$year[which(paralympics$sex == "Men"   & paralympics$sport == "Athletics")])   
+Basketball         <- min(paralympics$year[which(paralympics$sex == "Men"   & paralympics$sport == "Basketball")])
+Fencing            <- min(paralympics$year[which(paralympics$sex == "Men"   & paralympics$sport == "Fencing")])
+Swimming           <- min(paralympics$year[which(paralympics$sex == "Men"   & paralympics$sport == "Swimming")])
+Table_Tennis       <- min(paralympics$year[which(paralympics$sex == "Men"   & paralympics$sport == "Table_Tennis")])
+Triathlon          <- min(paralympics$year[which(paralympics$sex == "Men"   & paralympics$sport == "Triathlon")]) 
+Wheelchair_Tennis  <- min(paralympics$year[which(paralympics$sex == "Men"   & paralympics$sport == "Wheelchair_Tennis")])         
+
+#### Unequal Starts
+M_Volleyball       <- min(paralympics$year[which(paralympics$sex == "Men"   & paralympics$sport == "Volleyball")])   
+F_Volleyball       <- min(paralympics$year[which(paralympics$sex == "Women" & paralympics$sport == "Volleyball")]) 
+
+M_Powerlifting     <- min(paralympics$year[which(paralympics$sex == "Men"   & paralympics$sport == "Powerlifting")]) 
+F_Powerlifting     <- min(paralympics$year[which(paralympics$sex == "Women" & paralympics$sport == "Powerlifting")]) 
+
+```
+
+
+```{r}
+library(cowplot)
+library(ggstream)
+library(colorspace)
+library(showtext) ; showtext_auto() ; font_add_google("Amatic SC" , "amatic")
+theme_set(theme_minimal())
+
+text <- "All paralympic sports started in 1960\nwith both genders included\nother than those indicated\n(Wheelchair Tennis started in 1976, both genders)"
+
+background <- "white"
+text_color <- "grey50"
+
+palette <- c("#aa272f" , lighten("#aa272f" , 0.25)  , lighten("#aa272f" , 0.50) , lighten("#aa272f" , 0.75) , 
+             "#00539f" , lighten("#00539f" , 0.25)  , lighten("#00539f" , 0.50) , lighten("#00539f" , 0.75) ,
+             "#008542" , lighten("#008542" , 0.25) ,  lighten("#008542" , 0.50) )
+
+ggdraw(
+paralympics %>%
+  ggplot(aes(year , n , fill = sport)) +
+  geom_stream(bw = 0.75 , n_grid = 550) +
+  scale_fill_manual(values = palette) +
+  scale_x_continuous(breaks = c(1980 , seq(1990 , 2010 , 10), 2016)) +
+  labs(title = "When Paralympians Started Competing in Olympic Sports" , fill = "Sport") + 
+  # Arrows & annotations to males / females starting to compete
+  annotate(geom = "text" , x = 1984, y = 500 , label = text , size = 5 , color = "white" , family = "amatic") + 
+  # Powerlifting
+  geom_curve(aes(x = M_Powerlifting, y = -300, xend = M_Powerlifting, yend = -60), arrow = arrow(length = unit(0.02, "npc")), size = 0.5, color = "white") +
+  annotate(geom = "text" , x = M_Powerlifting - 1, y = -300 , label = paste0(M_Powerlifting , "\nPowerLifting\n(Men Only)") , size = 4.5 , color = "white" , family = "amatic") +
+  geom_curve(aes(x = F_Powerlifting - 1, y = -300, xend = F_Powerlifting - 1, yend = 20), arrow = arrow(length = unit(0.02, "npc")), size = 0.5, color = "white") +
+  annotate(geom = "text" , x = F_Powerlifting - 2, y = -300 , label = paste0(F_Powerlifting , "\nPowerLifting\n(Females Enter)") , size = 4.5 , color = "white" , family = "amatic") +
+  # Volleyball
+  geom_curve(aes(x = M_Volleyball + 2, y = -1500, xend = M_Volleyball + 0.5, yend = -1500), arrow = arrow(length = unit(0.02, "npc")), size = 0.5, color = "black") +
+  annotate(geom = "text" , x = M_Volleyball + 3, y = -1500 , label = paste0(M_Volleyball , "\nVolleyball\n(Men Only)") , size = 4.5 , color = "black" , family = "amatic") +
+  geom_curve(aes(x = F_Volleyball- 1, y = -1200, xend = F_Volleyball - 1, yend = -900), arrow = arrow(length = unit(0.02, "npc")), size = 0.5, color = "black") +
+  annotate(geom = "text" , x = F_Volleyball - 2, y = -1200 , label = paste0(F_Volleyball , "\nVolleyball\n(Female Enter)") , size = 4.5 , color = "black" , family = "amatic") +
+  # Triathalon
+  geom_curve(aes(x = Triathlon - 4, y = -1200, xend = Triathlon - 1 , yend = -900), arrow = arrow(length = unit(0.02, "npc")), size = 0.5, color = "black") +
+  annotate(geom = "text" , x = Triathlon - 5, y = -1200 , label = paste0(Triathlon , "\nTriathlon\n(Both Genders)") , size = 4.5 , color = "black" , family = "amatic") +  
+  # Rugby
+  geom_curve(aes(x = Mix_Rugby + 1, y = 400, xend = Mix_Rugby + 1 , yend = 0), arrow = arrow(length = unit(0.02, "npc")), size = 0.5, color = "white") +
+  annotate(geom = "text" , x = Mix_Rugby + 2, y = 400 , label = paste0(Mix_Rugby , " Rugby\n(Both Genders)") , size = 4.5 , color = "white" , family = "amatic") +  
+  # theme 
+  theme(
+    text = element_text(color = text_color , face = "bold"),
+    plot.title = element_text(family = "amatic" , size = 40 , hjust = 0.24),
+    panel.background = element_rect(fill = background , color = background),
+    plot.background = element_rect(fill = background , color = background),
+    axis.title = element_blank(),
+    axis.text.y = element_blank(),
+    axis.text.x = element_text(color = text_color , face = "bold" , family = "amatic" , size = 30 , vjust = 3),
+    panel.grid.minor = element_blank(),
+    panel.grid.major = element_blank(),
+    legend.position = c(0.70,0.075),
+    legend.direction = "horizontal",
+    legend.title = element_blank(),
+    legend.text = element_text(family = "amatic" , size = 20),
+    plot.margin = margin(1,0,1,0, unit = "cm"))) +
+    annotate(geom = "text" , label = "Source: kaggle.com | Graphic: @NearAndDistant" , x = 0.14 , y = 0.11 , family = "amatic" , size = 6) +
+# annotate images
+draw_image(image = "https://upload.wikimedia.org/wikipedia/commons/thumb/b/be/Logo_of_the_International_Paralympic_Committee_2019.svg/1280px-Logo_of_the_International_Paralympic_Committee_2019.svg.png", x = 0.030 , y = 0.80 , height = 0.20 , width = 0.15)
+
+```
+
+#### Saving
+```{r}
+
+ggsave(here::here("Paralympic.png"), dpi = 360, height = 10, width = 16)
+
+```
