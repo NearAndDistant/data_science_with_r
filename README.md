@@ -4,6 +4,8 @@
 
 Using International Paralympic Committee data on the Olympics since 1980 we can visualise the enterance of difference in when sexes started competing in Olympic sports and their relative count.[Code](https://github.com/NearAndDistant/data_science_with_r/blob/main/Tidy_Tuesday/2021/Week%2031%20:%20Paralympics/%5BCode%5D)
 
+![Paralympic](https://user-images.githubusercontent.com/79040885/128081045-c1641258-40a7-4afa-a6fa-608fb823e78d.png)
+
 ## Olympics : Females Entering the Ring
 
 Using Kaggle data on the Olympics since 1904 we can visualise the enterance of difference in when sexes started competing in Olympic combat sports and their relative count. [Code](https://github.com/NearAndDistant/data_science_with_r/blob/main/Tidy_Tuesday/2021/Week%2031%20:%20Olympics/%5BCode%5D)
