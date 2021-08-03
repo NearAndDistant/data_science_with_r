@@ -1,1 +1,1 @@
-![Paralympic](https://user-images.githubusercontent.com/79040885/128079056-d702ea58-aba1-4f86-a742-f5b9575906f3.png)
+![Paralympic](https://user-images.githubusercontent.com/79040885/128080428-466bf568-a670-452d-bf11-bee09cad83bb.png)
