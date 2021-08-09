@@ -1,0 +1,224 @@
+---
+title: "Public Park Access"
+author: "NearAndDistant"
+date: "04/08/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+
+parks_raw <- 
+  read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-06-22/parks.csv') %>%
+  mutate(spend_per_resident = as.numeric(str_remove_all(spend_per_resident_data, "[$]")),
+         pct_near_park_data = as.numeric(str_remove_all(pct_near_park_data, "[%]")))
+
+```
+
+#### Cities to States
+```{r}
+library(tigris)
+
+states <- tigris::states()
+cities <- maps::us.cities
+
+#### Cities 
+cities <- 
+  cities %>%
+  mutate(name = str_to_title(name),
+         name = str_remove_all(name , "\\s[^ ]+$")) %>% # regex to remove state abbreviation from end of city name
+  mutate(name = if_else(name == "Arlington" & country.etc == "TX" , "Arlington, Texas" , name), # fix label for join
+         name = if_else(name == "Arlington" & country.etc == "VA" , "Arlington, Virginia" , name)) # fix label for join
+
+#### States
+parks <-
+  parks_raw %>%
+  filter(year == "2020") %>%
+  mutate(city = if_else(city == "Washington, D.C." , "Washington" , city),
+         city = str_replace(city , "St. " , "Saint "), # to fix join for St. Paul , St. Petersburg & St. Louis
+         city = if_else(city == "Charlotte/Mecklenburg County" , "Charlotte" , city)) %>%
+  left_join(cities , by = c(city = "name")) %>%
+  # fixes post-join to tidy only
+  mutate(country.etc = if_else(city == "Arlington, Texas" , "TX" , country.etc),
+         city = if_else(city == "Arlington, Texas" , "Arlington" , city),
+         country.etc = if_else(city == "Arlington, Virginia" , "VA" , country.etc),
+         city = if_else(city == "Arlington, Virginia" , "Arlington" , city)) %>%
+  left_join(states , by = c(country.etc = "STUSPS")) %>%
+  filter(!city %in% c("Honolulu" , "Anchorage")) %>%
+  group_by(NAME) %>%
+  mutate(state_points = sum(total_points)) %>%
+  ungroup() %>%
+  select(year , city , state_abb = country.etc , state = NAME , rank , pop , spend_per_resident , pct_near_park_data , state_points , total_points , city_lat = lat , city_long = long)
+
+```
+
+#### Maps
+```{r}
+library(showtext)
+showtext_auto()
+font_add_google("Architects Daughter" , "architect")
+
+us_states <- 
+  map_data("state") %>% mutate(region = str_to_title(region)) %>%
+  left_join(parks , by = c("region" = "state")) %>%
+  rename(state_lat = lat , state_long = long)
+
+map <-
+us_states %>%
+  ggplot(aes(state_long, state_lat)) +
+    geom_polygon(aes(group = group , fill = state_points) , colour = "white") +
+    scale_fill_viridis_b(option = "viridis" , begin = 0.35 , end = 0 , alpha = 0.90) +
+    coord_map("bonne" , lat0 = 100) +
+    geom_point(data = parks , aes(city_long , city_lat , size = pop), color = "#55C667FF" , alpha = 0.85) +
+    guides(size = "none") +
+    guides(fill = guide_legend(frame.color = "white",
+                               title.position = "top",
+                               label.position = "bottom")) +
+    labs(fill = "Total Park Points (per State)") +
+    theme_void() +
+    theme(
+      text = element_text(family = "architect"),
+      legend.position = c(0.75 , 0.84),
+      legend.direction = "horizontal")
+
+```
+
+#### Model
+```{r build linear model}
+library(tidymodels)
+
+#### Split
+set.seed(123)
+
+split <- initial_split(parks)
+
+parks_train <- training(split) 
+parks_test <- testing(split)
+
+#### Boot
+set.seed(456)
+
+(parks_boot <- bootstraps(parks_train , times = 2000))
+
+#### Mdl 
+mdl_boots <-
+  parks_boot %>%
+  mutate(mdl_fit   = map(splits, ~lm(log(spend_per_resident) ~ total_points , data = .)),
+         coef_info = map(mdl_fit, tidy),
+         glance = map(mdl_fit , glance))
+
+#### Coefficients
+coef_info <- 
+  mdl_boots %>%
+  unnest(coef_info)
+
+#### Summary
+boots_glance <-
+  mdl_boots %>%
+  unnest(glance)
+
+#### Confidence Intervals
+pct_intervals <-
+  int_pctl(mdl_boots , coef_info)
+
+#### Visualise CIs
+coef_info %>%
+ggplot(aes(estimate)) +
+  geom_histogram(bins = 30) +
+  facet_wrap( ~ term, scales = "free") +
+  geom_vline(aes(xintercept = .lower), data = pct_intervals, col = "blue") +
+  geom_vline(aes(xintercept = .upper), data = pct_intervals, col = "blue")
+
+#### Visualise Curve
+boots_aug <- 
+  mdl_boots %>% 
+  sample_n(200) %>% 
+  mutate(augmented = map(mdl_fit, augment)) %>% 
+  unnest(augmented) %>%
+  rename(log_spend_per_resident = `log(spend_per_resident)`)
+
+ggplot(boots_aug, aes(total_points, log_spend_per_resident)) +
+  geom_line(aes(y = .fitted, group = id), alpha = .2, col = "blue") +
+  geom_point()
+
+```
+
+```{r}
+
+(mdl_fit_test <- lm(log(spend_per_resident) ~ total_points , parks_test))
+
+r_squared_test <-
+glance(mdl_fit_test) %>% 
+  pull(r.squared)
+
+#### Visualise Test & Training R-Squared
+boots_glance %>%
+ggplot(aes(r.squared)) +
+  geom_density() +
+  geom_vline(aes(xintercept = r_squared_test), col = "blue")  +
+  theme_void() +
+  theme(axis.text = element_text())
+
+```
+
+
+```{r visualise linear model}
+theme_set(theme_minimal())
+
+text <- "Since 2011, The Trust for Public Land (TPL) has kept track of green space availability across U.S. metros\nthrough the ParkScore index, which measures how well cities are meeting their residents’ green-space need\nbased on five metrics: park access, acreage, investment, equity and amenities.\n\nEven though we can measure against each seperate metric there is still no more powerful of a predictor\nthan spend per resident ($) which when plotted on a logarithmic scale can predict 75% of the variance in\ntotal points (Adj. R Squared [mean of n = 2000 samples]) on our training cases and 79% on our test case"
+
+linear_mdl <-
+parks %>%
+filter(city != "Albuquerque") %>%
+  ggplot(aes(total_points , spend_per_resident)) +
+  geom_point(aes(color = state_points), size = 16) +
+  geom_point(aes(size = pop) , color = "#55C667FF") +
+  scale_color_viridis_c(option = "viridis" , begin = 0.35 , end = 0 , alpha = 0.90) +
+  geom_smooth(method = "lm" , se = FALSE , color = "grey60") +
+  ggrepel::geom_label_repel(aes(label = paste0(city , ", " , state_abb)), segment.linetype = "solid" , family = "architect" , size = 3) +
+  guides(alpha = "none" , fill = "none" , color = "none") +
+  scale_y_log10(breaks = seq(0,500 , 50) , label = scales::label_dollar(prefix = "$" , accuracy = 2)) +
+  annotate(geom = "text" , x = 90 , y = 500 , label = "The Trust for Public Land" , family = "architect" , size = 16 , hjust = 0) +
+  annotate(geom = "text" , x = 90 , y = 305 , label = text , family = "architect" , size = 4 , hjust = 0) +
+  annotate(geom = "text" , x = 300 , y = 15 , label = "Source: tpl.org\nGraphic: @NearandDistant" , family = "architect" , size = 4 , hjust = 0) +
+  coord_cartesian(clip = "off") +
+  labs(
+    y = "Park Spend per City Resident (Log Scale)",
+    x = "Total Points per Park",
+    size = "City Population") +
+  theme(
+    text = element_text(family = "architect"),
+    axis.title = element_text(face = "bold"),
+    axis.title.x = element_text(vjust = -3),
+    axis.text = element_text(size = 12),
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank(),
+    panel.grid.major.y = element_blank(),
+    legend.position = c(0.015, 0.10),
+    #plot.background =  element_rect(fill = background , color = background),
+    #panel.background = element_rect(fill = background , color = background),
+    plot.margin = margin(1,1,0.5,0.5, unit = "cm"))
+
+```
+
+#### Final Plot
+```{r}
+library(cowplot)
+
+ggdraw(linear_mdl) + 
+  draw_plot(map , 
+            x = 0.55 , y = -0.10,
+            height = 0.75 , width = 0.50)
+
+```
+
+#### Save
+```{r}
+
+ggsave(here::here("public_parks.png"), dpi = 360, height = 10, width = 16)
+
+```
