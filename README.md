@@ -1,5 +1,13 @@
 # Data Science with R: Projects
 
+## Public Park Access : Linear Model of Trust for Public Land data
+
+Since 2011, The Trust for Public Land (TPL) has kept track of green space availability across U.S. metros through the ParkScore index, which measures how well cities are meeting their residents’ green-space need based on five metrics: park access, acreage, investment, equity and amenities.
+
+Even though we can measure against each seperate metric there is still no more powerful of a predictor than spend per resident ($) which when plotted on a logarithmic scale can predict 75% of the variance in\ntotal points (Adj. R Squared [mean of n = 2000 samples]) on our training cases and 79% on our test case. [Code](https://github.com/NearAndDistant/data_science_with_r/blob/main/Tidy_Tuesday/2021/Week%2026%20:%20Public%20Park%20Access/%5BCode%5D)
+
+![public_parks](https://user-images.githubusercontent.com/79040885/128761834-b34c25c8-36fa-4b3d-bd53-a34af2041bb5.png)
+
 ## Paralympics : When Paralympians started competing in the Olympics
 
 Using International Paralympic Committee data on the Olympics since 1980 we can visualise the enterance of difference in when sexes started competing in Olympic sports and their relative count.[Code](https://github.com/NearAndDistant/data_science_with_r/blob/main/Tidy_Tuesday/2021/Week%2031%20:%20Paralympics/%5BCode%5D)
