@@ -1,5 +1,15 @@
 # Data Science with R: Projects
 
+## Bureau of Economic Analysis : Reporting on Infrastructure Spend
+
+Infrastructure provides critical support for economic activity, and assessing its role requires reliable measures. This series of graphics provide an overview of U.S. infrastructure data in the National Economic Accounts. Data from the Bureau of Economic Analysis (BEA) shows Investment in some important types of basic infrastructure has barely or not kept up with depreciation in recent decades (fig. a), though some sub-categories look better (fig. b) showing spend in real terms. [Code](https://github.com/NearAndDistant/data_science_with_r/blob/main/Tidy_Tuesday/2021/Week%2033%20:%20Bureau%20of%20Economic%20Analysis/%5BCode%5D)
+
+See [here](https://github.com/NearAndDistant/data_science_with_r/tree/main/Tidy_Tuesday/2021/Week%2033%20:%20Bureau%20of%20Economic%20Analysis) for all 16 graphics: 
+
+![Conservation](https://user-images.githubusercontent.com/79040885/129484291-5284ef46-6a90-4f82-ada5-336252707559.png)
+![Health](https://user-images.githubusercontent.com/79040885/129484304-4022ab75-d010-4105-a1d0-a0fd17b33e20.png)
+![Public Safety](https://user-images.githubusercontent.com/79040885/129484314-5f7a4dfe-3f52-43c3-8f19-784409b2e3de.png)
+
 ## Public Park Access : Linear Model of Trust for Public Land data
 
 Since 2011, The Trust for Public Land (TPL) has kept track of green space availability across U.S. metros through the ParkScore index, which measures how well cities are meeting their residents’ green-space need based on five metrics: park access, acreage, investment, equity and amenities.
