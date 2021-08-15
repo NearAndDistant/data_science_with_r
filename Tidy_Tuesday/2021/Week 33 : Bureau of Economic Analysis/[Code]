@@ -1,0 +1,201 @@
+---
+title: "BEA Infrastructure Investment"
+author: "NearAndDistant"
+date: "14/08/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#### Detail of Data - use in graphic
+```{r}
+
+text <- 
+"Infrastructure provides critical support for economic activity, and assessing its role requires reliable measures. This series of graphics provide an overview of\nU.S. infrastructure data in the National Economic Accounts. Data from the Bureau of Economic Analysis (BEA) shows Investment in some important types of\nbasic infrastructure has barely or not kept up with depreciation in recent decades (fig. a), though some sub-categories look better (fig. b) showing spend in real terms."
+
+```
+
+gross_inv       : Gross investment in millions of USD (gdp_real)
+gross_inv_chain : Gross investment (chained 2021 dollars) in millions of USD (gdp_nominal)
+gross_inv_ipd   : Implicit Price Deflators (IPDs) is equal to (nominal GDP / real GDP) * 100 (deflation)
+
+#### Import
+```{r}
+library(tidyverse)
+
+investment_raw       <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-08-10/investment.csv')
+chain_investment_raw <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-08-10/chain_investment.csv')
+ipd_raw              <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-08-10/ipd.csv')
+
+```
+
+#### Wrangle
+```{r}
+
+bea_analysis <-
+investment_raw %>%
+  full_join(chain_investment_raw) %>%
+  full_join(ipd_raw) %>%
+  mutate(gross_inv_ipd   = gross_inv_ipd / 100) %>% # show as numeric not percentage
+  rename(real_spend      = gross_inv , 
+         nominal_spend   = gross_inv_chain , 
+         deflation       = gross_inv_ipd) %>% # gdp_real / gdp_nominal (calculated variable from BEA)
+  filter(real_spend != 0 & nominal_spend != 0,
+         real_spend > 0) %>%
+  mutate(deflation = if_else(!is.na(deflation), deflation,  real_spend / nominal_spend))
+
+# to long form
+bea_analysis_long <-
+  bea_analysis %>%
+  pivot_longer(cols = c(real_spend , nominal_spend), names_to = "type" , values_to = "value") %>%
+  mutate(value = value / 1000) %>%
+  group_by(meta_cat) %>%
+  mutate(category = fct_lump_n(category , n = 3 , w = value)) %>%
+  mutate(category = recode_factor(category, "Private communications equipment in NAICS 515, 517, 518, and 519" = "Private communications equipment",
+                                            "Private software in NAICS 515, 517, 518, and 519" = "Private software",
+                                            "Private computers in NAICS 515, 517, 518, and 519" = "Private computers",
+                                            "Private other railroad/track replacement structures" = "Private Railroad Replacement",
+                                            "S&L" = "State & Local")) %>%
+  mutate(meta_cat = recode_factor(meta_cat, "Conservation and development" = "Conservation")) %>%
+  mutate(meta_cat = str_replace_all(meta_cat , "/" , "& "),
+         meta_cat = str_to_title(meta_cat)) %>%
+  ungroup() %>%
+  mutate(category        = as_factor(category),
+         meta_cat        = as_factor(meta_cat)) %>%
+  select(-deflation)
+
+```
+
+### EDA
+```{r}
+theme_set(theme_minimal())
+
+# all infrastructure 
+bea_analysis %>%
+  group_by(year , meta_cat) %>%
+  summarise(nominal_spend = sum(nominal_spend)) %>%
+  filter(!meta_cat %in% c("Total infrastructure" , "Total basic infrastructure")) %>%
+  ggplot(aes(year , nominal_spend)) +
+  geom_area(aes(fill = meta_cat))
+
+```
+
+### Palette
+```{r}
+library(showtext)
+showtext_auto()
+
+font_add_google("Faster One" , "faster")
+font_add_google("Saira Extra Condensed" , "saira")
+
+```
+
+
+```{r}
+library(cowplot)
+
+for(i in levels(bea_analysis_long$meta_cat)){
+
+meta_category <- i
+
+# for labels (real - nominal)
+label_real_nominal <-
+bea_analysis_long %>%
+  filter(year == 2017,
+         meta_cat == meta_category) %>% # generalise variable
+  mutate(type = str_replace(type, "_" , " "),
+         type = str_to_title(type)) %>%
+  group_by(type) %>%
+  summarise(last = sum(value)) %>%
+  arrange(last) %>%
+  mutate(last = if_else(row_number() == 1 , last[1] * 0.90, last)) # fixes any overlap by adding 3
+
+# real vs nominal spend
+plot_real_nominal <-
+bea_analysis_long %>%
+  filter(meta_cat == meta_category) %>% # generalise variable
+  group_by(year , type) %>%
+  summarise(value = sum(value)) %>%
+    ggplot(aes(year , value)) +
+    geom_col(aes(fill = type), width = 1 , position = "dodge") +
+    scale_fill_viridis_d(option = "cividis" , begin = 0.5 , end = 0) +
+    scale_y_continuous(labels = scales::label_number(prefix = "$" , suffix = "Bn" , accuracy = 2), 
+                       expand = c(0,0),
+                       sec.axis = dup_axis(breaks = label_real_nominal$last, # https://datavizpyr.com/direct-labeling-with-secondary-axis-trick-ggplot2-r/
+                                           labels = label_real_nominal$type)) + # generalise variable
+    scale_x_continuous(breaks = c(1947 , seq(1960 ,2000 , 10), 2017)) +
+    coord_cartesian(clip = "off") +
+    theme(
+      legend.position = "none",
+      axis.title = element_blank(),
+      axis.text = element_text(family = "saira" , size = 14),
+      panel.grid.minor = element_blank(),
+      panel.grid.major.x = element_blank()
+    )
+
+###################################################################################################
+
+# for labels (category)
+label_category <-
+bea_analysis_long %>%
+  filter(year == 2017,
+         type == "real_spend",
+         meta_cat == meta_category) %>%
+  mutate(type = str_replace(type, "_" , " "),
+         type = str_to_title(type)) %>%
+  group_by(category) %>%
+  summarise(last = last(value)) 
+
+# category spend
+plot_category <- 
+bea_analysis_long %>%
+  filter(meta_cat == meta_category,
+         type == "real_spend") %>% # unhash to work on one filter
+    ggplot(aes(year , value)) +
+    geom_col(aes(fill = category) , width = 1 , position = "dodge") +
+    scale_fill_viridis_d(option = "cividis" , begin = 0 , end = 0.85) +
+    scale_y_continuous(labels = scales::label_number(prefix = "$" , suffix = "Bn", accuracy = 2),
+                       expand = c(0,0),
+                       sec.axis = dup_axis(breaks = label_category$last, # generalise variable
+                                           labels = label_category$category, # generalise variable
+                                           guide  = guide_axis(check.overlap = TRUE))) + 
+    scale_x_continuous(breaks = c(1947 , seq(1960 ,2010 , 10), 2017)) +
+  coord_cartesian(clip = "off") +
+    theme(
+      legend.position = "none",
+      axis.text = element_text(family = "saira" , size = 14),
+      axis.title = element_blank(),
+      axis.text.x = element_text(size = 20 , face = "bold" , vjust = -3),
+      axis.text.y.left = element_text(face = "bold"),
+      axis.text.y.right = element_text(size = 14 , margin = margin(0, 0, 0, -12, unit = "mm")),
+      panel.grid = element_blank(),
+      plot.margin = margin(1,0.5,1,1, unit = "cm")
+    )
+
+######################################################################################### final plot
+ggdraw(plot_category) +
+  draw_plot(plot_real_nominal ,
+            x = 0.10 , y = 0.40,
+            height = 0.35 , width = 0.35) + 
+  draw_text(text = "BEA Infrastructure Analysis",
+            family = "faster", x = 0.32 , y = 0.92 , size = 35 , color = "grey 40") +
+  draw_text(text = text,
+            family = "saira", x = 0.06 , y = 0.85 , size = 12 , hjust = 0) +
+  draw_text(text = "(fig. a)",
+            family = "saira", x = 0.10 , y = 0.40 , size = 12 , hjust = 0 , fontface = "bold") +
+  draw_text(text = "(fig. b)",
+            family = "saira", x = 0.10 , y = 0.15 , size = 12 , hjust = 0 , fontface = "bold") +
+  draw_text(text = meta_category,
+            family = "faster", x = 0.10 , y = 0.30 , size = 22 , hjust = 0 , fontface = "bold") +
+  draw_text(text = "Data: Bureau of Economic Analysis\nGraphic: @NearandDistant",
+            family = "saira", x = 0.10 , y = 0.26 , size = 12 , hjust = 0) +
+  theme(plot.margin = margin(0,0,0,0, unit = "cm"))
+
+# save plot
+ggsave(here::here(paste0(meta_category ,".png")), dpi = 360, height = 10, width = 16)
+
+}
+
+```
