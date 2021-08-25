@@ -1,5 +1,11 @@
 # Data Science with R: Projects
 
+## Kenya Census : Internet Access
+
+The 2019 Kenya Population and Housing Census was the eighth to be conducted since 1948 and was conducted from the 24th to 31st August 2019. Kenya leveraged technology to capture cartographic mapping, enumeration and data transmission, making the 2019 Census the first paperless census to be conducted in Kenya. Here we map internet usage across Kenya to show the low overall usage and vast disparities between counties (left) and between the sexes (right)[Code](https://github.com/NearAndDistant/data_science_with_r/blob/main/Tidy_Tuesday/2021/Week%2004%20:%20Kenya%20Census/%5BCode%5D)
+
+![kenya_internet_access](https://user-images.githubusercontent.com/79040885/130794583-b29cba7b-718f-415f-a753-e68755e71e2c.png)
+
 ## Star Trek : Do Androids Dream of Stars
 
 Using frequency analysis on Star Trek interactions we can analyse the different words Humanoids, Androids and Computers use in Star Trek. Using sentiment analysis we can see the android Data uses far less emotive words across all types of interactions with Computer than Humanoids\nor even Computer does. Using both Computer plots we can see that Computer uses a lot of negative sentiment and time words begging the question if Computer is a glorified clock. [Code](https://github.com/NearAndDistant/data_science_with_r/blob/main/Tidy_Tuesday/2021/Week%2034%20:%20Star%20Trek/%5BCode%5D)
