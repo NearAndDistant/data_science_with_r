@@ -2,7 +2,7 @@
 
 ## Kenya Census : Internet Access
 
-The 2019 Kenya Population and Housing Census was the eighth to be conducted since 1948 and was conducted from the 24th to 31st August 2019. Kenya leveraged technology to capture cartographic mapping, enumeration and data transmission, making the 2019 Census the first paperless census to be conducted in Kenya. Here we map internet usage across Kenya to show the low overall usage and vast disparities between counties (left) and between the sexes (right)[Code](https://github.com/NearAndDistant/data_science_with_r/blob/main/Tidy_Tuesday/2021/Week%2004%20:%20Kenya%20Census/%5BCode%5D)
+The 2019 Kenya Population and Housing Census was the eighth to be conducted since 1948 and was conducted from the 24th to 31st August 2019. Kenya leveraged technology to capture cartographic mapping, enumeration and data transmission, making the 2019 Census the first paperless census to be conducted in Kenya. Here we map internet usage across Kenya to show the low overall usage and vast disparities between counties (left) and between the sexes (right). [Code](https://github.com/NearAndDistant/data_science_with_r/blob/main/Tidy_Tuesday/2021/Week%2004%20:%20Kenya%20Census/%5BCode%5D)
 
 ![kenya_internet_access](https://user-images.githubusercontent.com/79040885/130794583-b29cba7b-718f-415f-a753-e68755e71e2c.png)
 
