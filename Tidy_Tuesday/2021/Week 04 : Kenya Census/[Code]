@@ -1,0 +1,174 @@
+---
+title: "Kenya Census"
+author: "NearAndDistant"
+date: "23/08/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#### Import
+```{r}
+
+population_raw     <- rKenyaCensus::V1_T2.2
+homelessness_raw   <- rKenyaCensus::V4_T2.29
+internet_raw       <- rKenyaCensus::V4_T2.33
+
+library(sf)
+
+a_shp_files        <- rKenyaCensus::KenyaCounties_SHP %>% st_as_sf() %>% mutate(County = str_to_title(County)) %>% janitor::clean_names()
+a_county_centroids <- rKenyaCensus::CountyGPS %>% mutate(County = str_to_title(County)) %>% janitor::clean_names()
+a_data_cat         <- rKenyaCensus::DataCatalogue
+
+```
+
+#### WrangleR
+```{r}
+library(tidyverse)
+
+options(scipen=999)
+
+# internet access: Urban / Rural
+internet_kenya <-
+  internet_raw[1:3,] %>%
+  mutate(SubCounty = str_to_title(SubCounty)) %>%
+  janitor::clean_names() %>%
+  select(-admin_area)
+
+# Internet access: County Level
+internet_county_lvl <-
+  internet_raw %>%
+  janitor::clean_names() %>%
+  mutate(county = str_to_title(county),
+       sub_county = str_to_title(sub_county)) %>%
+  mutate(uo_i_total_perc = uo_i_total_perc / 100) %>%
+  filter(admin_area == "County") %>%
+  select(-sub_county)
+
+# Internet access: Sub County Level
+internet <-
+  internet_raw[-c(0:3),] %>%
+  janitor::clean_names() %>%
+  mutate(county = str_to_title(county),
+         sub_county = str_to_title(sub_county)) %>%
+  filter(admin_area == "SubCounty")
+
+```
+
+#### Fonts
+```{r}
+library(showtext)
+showtext_auto()
+font_add_google("Staatliches" , "staat")
+
+```
+
+#### Internet Access (Gender)
+```{r}
+
+internet_sex <- 
+internet_county_lvl %>%
+  select(county , uo_i_male_perc , uo_i_female_perc) %>%
+  pivot_longer(cols = c(uo_i_male_perc , uo_i_female_perc)) %>%
+  mutate(name = if_else(name == "uo_i_male_perc", "Male", "Female"),
+         name = factor(name , levels = c("Male", "Female"))) %>%
+  mutate(value = value / 100) %>%
+    ggplot(aes(value , reorder(county, value) , fill = name)) +
+    geom_col(position = "dodge") +
+    #geom_text(aes(label = county), family = "staat" , size = 5, hjust = -0.25) +
+    scale_x_continuous(labels = scales::percent_format(accuracy = 2) , breaks = seq(0,.5,.1), ) +
+    scale_fill_viridis_d(option = "cividis" , begin = 0, end = 0.60) +
+    labs(x = NULL , y = NULL , fill = "Internet Usage by Sex") +
+    theme_minimal() +
+    theme(text = element_text(family = "staat"),
+          panel.grid = element_blank(), 
+          axis.text.y = element_text(size = 11, margin = margin(0,-10,0,0)),
+          legend.position = c(0.85, 0.05),
+          plot.margin = margin(1.25,0.25,1,0.5, unit = "cm"))
+
+```
+
+#### Map Join
+```{r}
+
+internet_map <-
+  a_shp_files %>%
+  inner_join(internet_county_lvl)
+
+```
+
+#### Kenya Shield
+```{r}
+
+kenyan_shield <- 
+  magick::image_read("https://upload.wikimedia.org/wikipedia/commons/thumb/e/e2/Flag_of_Kenya_%28shield%29.svg/1200px-Flag_of_Kenya_%28shield%29.svg.png") %>%
+  magick::image_colorize(opacity = 40, color = 'white')
+
+```
+
+#### Kenya Map
+```{r}
+
+set.seed(1)
+
+kenya_map <-
+internet_map %>%
+  ggplot() +
+  geom_sf(aes(fill = uo_i_total_perc)) +
+  geom_sf_label_repel(aes(label = county), family = "staat" , fill = "white" , size = 3) +
+  scale_fill_viridis_b(option = "cividis" , labels = scales::percent_format(accuracy = 2), begin = 0.3) +
+  guides(fill = guide_legend(frame.color = "white", title.position = "top", label.position = "bottom")) +
+  labs(#title = "Kenyan" , 
+       fill = "Internet Usage (%)") + 
+  theme_void() + 
+  theme(text = element_text(family = "staat"),
+        #plot.title.position = "plot",
+        #plot.title = element_text(size = 60 , family = "staat" , hjust = 0.70 , vjust = -15),
+        legend.position  = c(0.60 , 0.85),
+        legend.direction = "horizontal")
+
+```
+
+#### Mombassa Map
+```{r}
+
+mombasa_map <-
+internet_map %>%
+  filter(county == "Mombasa") %>%
+    ggplot() + 
+    geom_sf(fill = "#bfb170", color = "#3e4d6e", show.legend = FALSE) +
+    #facet_wrap(~"Mombasa") +
+    theme_void() +
+    theme(strip.text = element_text(family = "staat" , size = 12))
+
+```
+
+#### SHP File (Kenya)
+```{r}
+library(ggsflabel)
+library(cowplot)
+
+kenyan_text <- 
+"The 2019 Kenya Population and Housing Census was the eighth to be conducted\nsince 1948 and was conducted from the 24th to 31st August 2019. Kenya leveraged\ntechnology to capture cartographic mapping, enumeration and data transmission,\nmaking the 2019 Census the first paperless census to be conducted in Kenya. Here\nwe map internet usage across Kenya to show the low overall usage and vast disparities\nbetween counties (left) and between the sexes (right)"
+
+ggdraw() + 
+draw_image(kenyan_shield,     x = -0.225,   y = 0.20, height = 0.80 , width = 0.80) +
+draw_text(text = kenyan_text, x =  0.035,   y = 0.12 , family = "staat" , size = 12 , hjust = 0) +
+draw_text(text = "Data: knbs.or.ke\nGraphic: @NearandDistant", size = 10, x =  0.065, y = 0.22, family = "staat" , hjust = 0, color = "grey50") + 
+draw_plot(mombasa_map ,       x =  0.50,   y = 0.04, height = .12, width = .12) +
+draw_line(curvature = 1 ,     x = c(0.5025 , 0.54), y = c(0.10 , 0.16), color = "#3e4d6e") +
+draw_line(curvature = 1 ,     x = c(0.5025 , 0.54), y = c(0.10 , 0.03), color = "#3e4d6e") +
+draw_plot(kenya_map,          x = -0.10,  y = 0.00) +
+draw_text(text = "Kenyan",    x =  0.3975, y = 0.92, family = "staat" , size = 60 , hjust = 0) + 
+draw_plot(internet_sex ,      x =  0.60,   y = 0 , height = 1, width = 0.40)
+
+```
+
+#### Saving
+```{r}
+
+ggsave(here::here("kenya_internet_access.png"), dpi = 360, height = 10, width = 16)
+
+```
