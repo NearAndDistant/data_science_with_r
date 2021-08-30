@@ -1,5 +1,11 @@
 # Data Science with R: Projects
 
+## The Duke Lemur Centre
+
+The Duke Lemur Centre hosts the most diverse population of lemurs on Earth, outside their native Madagascar. Lemurs are the most threatened group of mammals on the planet, and 95% of lemur species are at risk of extinction. By studying variables that affect their health, reproduction, and social dynamics, the center learns how to most effectively focus their conservation efforts. Here we show the median life expectatcy of the largest 6 species. We can show using normalisation of species age at death and their distributions that between species 95% of Lemurs live between 2 months and 28 years (+/- 2 deviations).We can also see that 15% of the 2,872 Lemurs who have died at Duke's die under 6 months old. [Code](https://github.com/NearAndDistant/data_science_with_r/blob/main/Tidy_Tuesday/2021/Week%2035%20Lemurs/%5BCode%5D)
+
+![Move_it](https://user-images.githubusercontent.com/79040885/131346717-f4051c41-72e8-4997-8abd-6641f4072710.png)
+
 ## Kenya Census : Internet Access
 
 The 2019 Kenya Population and Housing Census was the eighth to be conducted since 1948 and was conducted from the 24th to 31st August 2019. Kenya leveraged technology to capture cartographic mapping, enumeration and data transmission, making the 2019 Census the first paperless census to be conducted in Kenya. Here we map internet usage across Kenya to show the low overall usage and vast disparities between counties (left) and between the sexes (right). [Code](https://github.com/NearAndDistant/data_science_with_r/blob/main/Tidy_Tuesday/2021/Week%2004%20:%20Kenya%20Census/%5BCode%5D)
