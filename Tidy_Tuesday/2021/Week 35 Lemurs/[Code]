@@ -1,0 +1,243 @@
+---
+title: "Lemurs"
+author: "NearAndDistant"
+date: "25/08/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#### Importing
+```{r}
+
+lemurs_raw <- 
+  readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-08-24/lemur_data.csv')
+
+```
+
+CMEAD	: Cheirogaleus medius	            : Fat-tailed dwarf lemur
+DMAD	: Daubentonia madagascariensis   	: Aye-aye
+EALB	: Eulemur albifrons	              : White-fronted brown lemur
+ECOL	: Eulemur collaris	              : Collared brown lemur
+ECOR	: Eulemur coronatus	              : Crowned lemur
+EFLA	: Eulemur flavifrons	            : Blue-eyed black lemur
+EFUL	: Eulemur fulvus	                : Common brown lemur
+EMAC	: Eulemur macaco	                : Black lemur
+EMON	: Eulemur mongoz	                : Mongoose lemur
+ERUB	: Eulemur rubriventer	            : Red-bellied lemur
+ERUF	: Eulemur rufus	                  : Red-fronted brown lemur
+ESAN	: Eulemur sanfordi	              : Sanford’s brown lemur
+EUL	  : Eulemur Eulemur	                : Hybrid
+GMOH	: Galago moholi	                  : Mohol bushbaby
+HGG	  : Hapalemur griseus griseus	      : Eastern lesser bamboo lemur
+LCAT	: Lemur catta	                    : Ring-tailed lemur
+LTAR	: Loris tardigradus	              : Slender loris
+MMUR	: Mircocebus murinus	            : Gray mouse lemur
+MZAZ	: Mirza coquereli	                : Northern giant mouse lemur
+NCOU	: Nycticebus coucang	            : Slow loris
+NPYG	: Nycticebus pygmaeus	            : Pygmy slow loris
+OGG	  : Otolemur garnettii garnettii	  : Northern greater galago
+PCOQ	: Propithecus coquereli	          : Coquerel’s sifaka
+PPOT	: Perodicticus potto	            : Potto
+VAR	  : Varecia Varecia	                : Hybrid
+VRUB	: Varecia rubra	                  : Red ruffed lemur
+VVV	  : Varecia variegata variegata	    : Black-and-white ruffed lemur
+
+#### Wrangle
+```{r}
+
+lemurs <-
+lemurs_raw %>%
+  mutate(taxon = trimws(taxon)) %>%
+  mutate(common_name = 
+    case_when(
+      taxon == "CMED"  ~ "Fat-tailed dwarf lemur",
+      taxon == "CMEAD" ~ "Fat-tailed dwarf lemur",
+      taxon == "DMAD"  ~ "Aye-aye",
+      taxon == "EALB"  ~ "White-fronted brown lemur",
+      taxon == "ECOL"  ~ "Collared brown lemur",
+      taxon == "ECOR"  ~ "Crowned lemur",
+      taxon == "EFLA"  ~ "Blue-eyed black lemur",
+      taxon == "EFUL"  ~ "Common brown lemur",
+      taxon == "EMAC"  ~ "Black lemur",
+      taxon == "EMON"  ~ "Mongoose lemur",
+      taxon == "ERUB"  ~ "Red-bellied lemur",
+      taxon == "ERUF"  ~ "Red-fronted brown lemur",
+      taxon == "ESAN"  ~ "Sanford’s brown lemur",
+      taxon == "EUL"   ~ "Hybrid",
+      taxon == "GMOH"  ~ "Mohol bushbaby",
+      taxon == "HGG"   ~ "Eastern lesser bamboo lemur",
+      taxon == "LCAT"  ~ "Ring-tailed lemur",
+      taxon == "LTAR"  ~ "Slender loris",
+      taxon == "MMUR"  ~ "Gray mouse lemur",
+      taxon == "MZAZ"  ~ "Northern giant mouse lemur",
+      taxon == "NCOU"  ~ "Slow loris",
+      taxon == "NPYG"  ~ "Pygmy slow loris",
+      taxon == "OGG"   ~ "Northern greater galago",
+      taxon == "PCOQ"  ~ "Coquerel’s sifaka",
+      taxon == "PPOT"  ~ "Potto",
+      taxon == "VAR"   ~ "Hybrid",
+      taxon == "VRUB"  ~ "Red ruffed lemur",
+      taxon == "VVV"   ~ "Black-and-white ruffed lemur")) %>%
+  mutate(common_name = str_to_title(common_name),
+         dam_name = str_to_title(dam_name),
+         sire_name = str_to_title(sire_name)) %>%
+  mutate(birth_type = case_when(birth_type == "CB"  ~ "Captive Born",
+                                birth_type == "WB"  ~ "Wild Born",
+                                birth_type == "UNK" ~ "Unknown")) %>%
+  select(taxon , common_name , name , birth_type , sex , conception = estimated_concep , con_month = concep_month , dob , dob_month = birth_month , gestation = expected_gestation , weight_g , weight_date , litter_size , dod , days_before_death  , age_at_death_y  , dam_name , sire_name ,dam_age_at_concep_y , sire_age_at_concep_y , age_max_live_or_dead_y) 
+# hybrid covered in 'common_name' (verified)
+
+```
+
+#### EDA
+```{r}
+library(tidyverse)
+theme_set(theme_minimal())
+
+lemurs_raw %>%
+  count(name, sort = TRUE)
+
+```
+
+##### Individual Lemur Records
+```{r}
+
+lemurs_records <-
+  lemurs %>%
+  group_by(name) %>%
+  filter(weight_date == last(weight_date)) %>%
+  ungroup() %>%
+  mutate(name = str_to_title(name)) %>%
+    pivot_longer(cols = c(dam_name , sire_name), names_to = "parent_sex", values_to = "parent_name") %>% 
+    pivot_longer(cols = c(dam_age_at_concep_y , sire_age_at_concep_y), names_to = "parent_con", values_to = "age_at_con") %>% 
+     mutate(parent_sex = if_else(parent_sex == "dam_name" , "Dame" , "Sire"),
+            parent_con = if_else(parent_con == "dam_age_at_concep_y" , "Dame" , "Sire")) %>%
+     filter(parent_sex == "Dame" & parent_con == "Dame" |
+            parent_sex == "Sire" & parent_con == "Sire") %>% 
+     select(-parent_con)
+
+# factored into 6
+lemurs_rec_fct <-
+lemurs_records %>%
+  mutate(common_name = fct_lump(common_name , 5),
+         age_max_live_or_dead_y = as.double(age_max_live_or_dead_y)) %>%
+  filter(!is.na(dod)) %>%
+    group_by(common_name) %>%
+    mutate(max_age_scale = scale(age_max_live_or_dead_y)) %>%
+    ungroup()
+
+# medians for groups
+lemurs_median_age <- 
+  lemurs_rec_fct %>%
+  group_by(common_name) %>%
+  summarise(median = median(age_max_live_or_dead_y , na.rm = TRUE)) %>%
+  ungroup()
+
+```
+
+```{r}
+
+# distribution of death across type and captive / wild birth
+lemurs_records %>%
+  filter(sex != "ND") %>%
+  ggplot(aes(age_at_death_y, fill = common_name )) +
+  geom_histogram(alpha = 0.75) +
+  scale_fill_viridis_d() +
+  labs(x = "Age at Death" , y = "Count of Lemurs" , fill = "Species of Lemur") +
+  theme(legend.position = c(0.25 , 0.765), 
+        panel.grid = element_blank())
+
+# lemurs average age of conception
+lemurs_records %>%
+  ggplot(aes(age_at_con , fill = parent_sex)) +
+  geom_density(alpha = 0.5) +
+  facet_wrap(~common_name)
+
+lemurs_records %>%
+  filter(parent_sex == "Sire",
+         birth_type == "Captive Born") %>%
+  ggplot(aes(age_at_con , age_max_live_or_dead_y , color = common_name)) +
+  geom_point(show.legend = FALSE) +
+  geom_smooth(method = "lm" , se = FALSE , show.legend = FALSE) +
+  facet_wrap(~common_name)
+
+# distributions
+lemurs_rec_fct %>%
+  ggplot(aes(max_age_scale , color = common_name)) +
+  geom_density(alpha = 0.25 , size = 1, alpha = 0.60 , show.legend = FALSE) +
+  scale_x_continuous(sec.axis = dup_axis(breaks = lemurs_rec_fct$max_age_scale, # generalise variable
+                                         labels = lemurs_rec_fct$age_max_live_or_dead_y, # generalise variable
+                                         guide  = guide_axis(check.overlap = TRUE))) +
+  scale_color_manual(values = ghibli::ghibli_palette("PonyoMedium", direction = -1))
+
+```
+
+##### Final Plot
+```{r}
+library(showtext); showtext_auto()
+font_add_google("Glory" , "glory")
+font_add_google("Barrio" , "barrio")
+font_add_google("Permanent Marker" , "marker")
+
+font <- "marker"
+
+library(see)
+
+# boxplot of lifespan across different species of lemur
+plot_lemurs_raincloud <-
+lemurs_rec_fct %>%
+  ggplot(aes(reorder(common_name, -age_max_live_or_dead_y), age_max_live_or_dead_y)) +
+  geom_boxplot(aes(fill = common_name),
+               alpha = 0.60, 
+               width = 0.15 ,
+               position = position_nudge(x = -0.40)) +
+  geom_text(data = lemurs_median_age, aes(x = common_name, y = median, label = round(median,2)), size = 4, vjust = 6.5, family = font) +
+  stat_summary(geom = "text" , aes(label = common_name), alpha = 0.75 , fun = max , vjust = 2 , hjust = 1 , size = 6 , family = font) +
+  geom_violindot(aes(fill = common_name),
+                 alpha = 0.60,
+                 trim = TRUE,
+                 binwidth = 0.08,
+                 scale = "area") +
+  scale_fill_manual(values = ghibli::ghibli_palette("PonyoMedium", direction = -1)) +
+  coord_flip() +
+  labs(y = "Age at Death" , 
+       x = NULL , 
+       fill = "Species Name") +
+  theme(text = element_text(family = font),
+        legend.position = "none",
+        panel.grid = element_blank(),
+        axis.title.x = element_text(size = 14 , vjust = -12),
+        axis.text.y = element_blank(),
+        plot.margin = margin(0,0,4,-10, unit = "mm"),
+        plot.background = element_rect(fill = "white" , color = "white"),
+        panel.background = element_rect(fill = "white" , color = "white"))
+
+```
+
+#### Final Plot
+```{r}
+library(cowplot)
+
+ggdraw(plot_lemurs_raincloud) +
+  draw_text(text = "The Duke Lemur Centre" , 
+            x = 0.99 , y = 0.975 , hjust = 1 , size = 30 , family = "marker") +
+  draw_text(text = "The Duke Lemur Centre hosts the most diverse population of lemurs on Earth, outside their native Madagascar.\nLemurs are the most threatened group of mammals on the planet, and 95% of lemur species are at risk of extinction.\nBy studying variables that affect their health, reproduction, and social dynamics, the center learns how to most effectively\nfocus their conservation efforts. Here we show the median life expectatcy of the largest 6 species. We can show using\nnormalisation of species age at death and their distributions that between species 95% of Lemurs live between 2 months\nand 28 years (+/- 2 deviations).We can also see that 15% of the 2,872 Lemurs who have died at Duke's die under 6 months old" , 
+            x = 0.99 , y = 0.885 , hjust = 1 , size = 10 , family = "glory") +
+  draw_text(text = "Data: lemur.duke.edu | Graphic: @NearandDistant" , 
+            x = 0.69 , y = 0.31 , hjust = 0 , size = 10 , family = "marker") +
+  draw_image("https://static.wikia.nocookie.net/penguinsofmadagascar/images/c/cd/King_Julien_profile.png/revision/latest?cb=20151125110328" ,
+             x = 0.70 , y = 0.30 , height = 0.46 , width = 0.5)
+
+```
+
+
+#### Saving
+```{r}
+
+ggsave(here::here("Move_it.png"), dpi = 360, height = 10, width = 16)
+
+```
+
