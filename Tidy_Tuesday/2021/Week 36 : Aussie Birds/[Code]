@@ -1,1 +1,201 @@
+---
+title: "Aussie Birds"
+author: "NearAndDistant"
+date: "01/09/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#### Importing
+```{r}
+
+bird_baths_raw <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-08-31/bird_baths.csv')
+
+```
+
+#### Wrangle
+```{r}
+library(tidyverse)
+
+# summarise season, bioregion & bird type
+bird_baths <-
+  bird_baths_raw %>%
+    mutate(survey_year = case_when(survey_year == 2014 ~ "winter",
+                                   survey_year == 2015 ~ "summer")) %>%
+    rename(season = survey_year) %>%
+    filter(!is.na(season)) %>%
+    filter(bird_count != 0) %>%
+  group_by(season, bioregions , bird_type) %>%
+  summarise(bird_count = sum(bird_count)) %>%
+  ungroup()
+
+```
+
+#### Summer / Winter
+```{r}
+
+bird_type_lump <- 
+bird_baths %>%
+  group_by(season , bird_type) %>%
+  summarise(bird_count = sum(bird_count)) %>%
+  ungroup() %>%
+  #mutate(bird_type = fct_lump(bird_type , n = 12, w = bird_count)) %>% 
+  #filter(bird_type != "Other") %>% 
+  pivot_wider(names_from = season, values_from = bird_count) %>%
+  slice_max(summer , n = 12) %>%
+  mutate(bird_type = fct_reorder(bird_type , summer))
+
+# central tendency
+summer_mean   <- round(mean(bird_type_lump$summer, na.rm = TRUE),0)
+winter_mean   <- round(mean(bird_type_lump$winter, na.rm = TRUE),0)
+summer_median <- median(bird_type_lump$summer, na.rm = TRUE)
+winter_median <- median(bird_type_lump$winter, na.rm = TRUE)
+  
+```
+
+#### Summer / Winter Plot
+```{r}
+library(showtext); showtext_auto()
+font_add_google("Mansalva" , "mansalva")
+font_add_google("Roboto" , "roboto")
+
+plot_bird_type <-
+bird_type_lump %>%
+    ggplot() +
+    geom_col(aes(x = winter, y = bird_type , fill = bird_type), show.legend = FALSE) + # , fill = "#066081"
+    geom_col(aes(x = -summer, y = bird_type, fill = bird_type), show.legend = FALSE) + # , fill = "#eea068"
+    geom_vline(xintercept = 0 , size = 3 , color = colorspace::lighten("#a2d6f2", 0.40)) +
+    geom_vline(xintercept =  -summer_mean  , linetype = "longdash") +
+    geom_vline(xintercept =  -summer_median, linetype = "longdash") +
+    geom_text(aes(x = -summer_mean, label = paste0("Mean: ", summer_mean), y = 5), angle = 90, vjust = -1, family = "mansalva", size = 4) +
+    geom_text(aes(x = -summer_median, label = paste0("Median: ", summer_median), y = 5), angle = 90, vjust = -1, family = "mansalva", size = 4) +
+    geom_vline(xintercept =  winter_mean  , linetype = "longdash") +
+    geom_vline(xintercept =  winter_median, linetype = "longdash") +
+    geom_text(aes(x = winter_mean, label = paste0("Mean: ", winter_mean), y = 6), angle = 90, vjust = -0.5, family = "mansalva", size = 4) +
+    geom_text(aes(x = winter_median, label = paste0("Median: ", winter_median), y = 6), angle = 90, vjust = -0.5, family = "mansalva", size = 4) +
+    annotate(geom = "text" , label = c("Summer" , "Winter") , x = c(-65 , 65) , y = 13 , hjust = c(0 , 1), family = "mansalva" , size = 12) +
+    geom_text(aes(x = 0 , y = bird_type , label = bird_type), 
+              family = "mansalva" , color = "white" , hjust = 1 , size = 4 , position = position_nudge(x = -4)) +
+  scale_fill_viridis_d(option = "viridis") +
+  scale_x_continuous(breaks = c(-125 , -50 , 0 , 50 , 125), 
+                     labels = c(125 , 50 , 0 , 50 , 125)) +
+  coord_cartesian(clip = "off") +
+  theme_void() +
+  theme(axis.text.x.bottom = element_text(vjust = -20 , family = "mansalva" , size = 14))
+
+```
+
+
+#### Import shp
+
+downloaded from: 
+http://www.environment.gov.au/fed/catalog/search/resource/downloadData.page?uuid=%7B2CD8B271-A723-4B1B-8D26-9C68B1974B45%7D
+
+```{r}
+library(sf)
+
+shp_aus_biogeo    <- st_read(dsn = here::here("ibra61_reg_shape"), layer = "ibra61_reg_shape")
+shp_aus_biogeo    <- st_transform(shp_aus_biogeo)
+shp_aus_biogeo_sf <- rmapshaper::ms_simplify(shp_aus_biogeo)
+
+```
+
+#### Bioregion Summary
+```{r}
+
+# create top bird type per bioregion per season
+bird_baths_summary <-
+  bird_baths %>%
+  group_by(season , bioregions , bird_type) %>%
+  summarise(bird_count = sum(bird_count)) %>%
+  slice_max(bird_count) %>%
+  filter(season == "summer")
+
+```
+
+#### Join
+```{r}
+
+shp_aus_birds <- 
+shp_aus_biogeo_sf %>%
+  filter(REG_NAME %in% bird_baths_summary$bioregions) %>%
+  inner_join(bird_baths_summary , by = c(REG_NAME = "bioregions"))
+
+```
+
+```{r}
+library(rnaturalearth)
+
+aus <- ne_countries(scale = "medium", returnclass = "sf", country = "Australia")
+
+```
+
+#### Palette
+```{r}
+
+palette <- c(
+"Noisy Miner"            = "#ffe600" ,
+"Australian Magpie"      = "#bbdf00" , 
+"Superb Fairy-wren"      = "#68d725" ,
+"Red Wattlebird"         = "#00c95e" , 
+"Magpie-lark"            = "#00b37b" ,
+"House Sparrow"          = "#009e8a" ,
+"Red-browed Finch"       = "#008690" ,
+"Willie Wagtail"         = "#007191" ,
+"Rainbow Lorikeet"       = "#2d5a90" ,
+"Crimson Rosella"        = "#443e8a" ,
+"New Holland Honeyeater" = "#4e1e77" ,
+"Grey Fantail"           = "#4b0657" ,
+"Satin Bowerbird"        = "#4f7693",
+"Double-barred Finch"    = "#89afbf"
+)
+
+```
+
+#### Australia Outline
+```{r}
+
+plot_aus_outline <-
+ggplot() +
+  geom_sf(data = aus, fill = "white", alpha = 0.75) + #"#f0c099"
+  geom_sf(data = shp_aus_birds , aes(fill = bird_type), show.legend = FALSE) +
+  annotate(geom = "label" , label = "Satin Bowerbird" ,     x = 154 , y = -32 , family = "mansalva") +
+  annotate(geom = "label" , label = "Double-barred Finch" , x = 145 , y = -25 , family = "mansalva") +
+  scale_fill_manual(values = palette) +
+  labs(fill = "Bird Type") +
+    theme_void() +
+    theme(plot.margin = margin(0,0,-10,-30, unit = "cm"),
+          legend.title = element_text(family = "mansalva", size = 14),
+          legend.text = element_text(family = "roboto" , size = 9),
+          legend.position = c(1.13 , 0.30),
+          legend.direction = "horizontal")
+
+```
+
+#### Final Panel
+```{r}
+library(cowplot)
+
+ggdraw() +
+  draw_plot(plot_aus_outline , height = 1.1 , width = 1.2, x = -0.05 , y = 0.01) + 
+  draw_plot(plot_bird_type , height = 0.6 , width = 0.6 , x = 0.42 , y = 0.115) +
+  draw_plot(legend) +
+  draw_text(
+"The Australian Bathing Birds Study" , family = "mansalva" , hjust = 0 , size = 28 , x = 0.36 , y = 0.97) +
+  draw_text(
+"Bird baths are a familiar sight in Australian gardens but surprisingly little is known about the precise role they play in the lives of birds.\n\nIn a dry continent such as Australia, bird baths may be vital to supporting an otherwise stressed bird population. Cleary et al (2016) wanted to find out more,\nso they enlisted the help of thousands of citizen scientists across Australia to gather as much data as they could on how birds use bird baths. And so the Bathing\nBirds Study was born. Started by researchers at Deakin University and Griffith University in 2014, this study involved collecting data online from 2,500 citizen\nscientists on bathing birds all over Australia in Winter 2014 and Summer 2015 (20 minutes, three times per week for four weeks).\n\nNotable Winter saw more specific birds, the Noisy Miners, Magpies and Rainbow Lorikeets (see below) but Summer saw more overall bird species,\nSummer diversity is geographically mapped to the left showing the predominant species surveyed in each bioregion in Summer", family = "roboto" , size = 10 , hjust = 0 , x = 0.36 , y = 0.85) +
+  draw_text("Data: Cleary et al (2016)\nGraphic: @NearandDistant" , family = "mansalva", hjust = 0, size = 14 , x = 0.01 , y = 0.22) +
+  theme(plot.background = element_rect(fill = colorspace::lighten("#a2d6f2", 0.40), color = NA))
+
+```
+
+#### Saving
+```{r}
+
+ggsave(here::here("Aussie_Birds.png"), dpi = 360, height = 10, width = 16)
+
+```
 
