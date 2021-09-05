@@ -1,5 +1,15 @@
 # Data Science with R: Projects
 
+## The Australian Bathing Birds Study
+
+Bird baths are a familiar sight in Australian gardens but surprisingly little is known about the precise role they play in the lives of birds. 
+
+In a dry continent such as Australia, bird baths may be vital to supporting an otherwise stressed bird population. Cleary et al (2016) wanted to find out more, so they enlisted the help of thousands of citizen scientists across Australia to gather as much data as they could on how birds use bird baths. And so the Bathing Birds Study was born. Started by researchers at Deakin University and Griffith University in 2014, this study involved collecting data online from 2,500 citizen scientists on bathing birds all over Australia in Winter 2014 and Summer 2015 (20 minutes, three times per week for four weeks).
+
+Notable Winter saw more specific birds, the Noisy Miners, Magpies and Rainbow Lorikeets (see below) but Summer saw more overall bird species, Summer diversity is geographically mapped to the left showing the predominant species surveyed in each bioregion in Summer. [Code](https://github.com/NearAndDistant/data_science_with_r/tree/main/Tidy_Tuesday/2021/Week%2036%20:%20Aussie%20Birds)
+
+![Aussie_Birds](https://user-images.githubusercontent.com/79040885/132122782-5bea8284-3666-4f6f-b87b-14e523ad01e5.png)
+
 ## The Duke Lemur Centre
 
 The Duke Lemur Centre hosts the most diverse population of lemurs on Earth, outside their native Madagascar. Lemurs are the most threatened group of mammals on the planet, and 95% of lemur species are at risk of extinction. By studying variables that affect their health, reproduction, and social dynamics, the center learns how to most effectively focus their conservation efforts. Here we show the median life expectatcy of the largest 6 species. We can show using normalisation of species age at death and their distributions that between species 95% of Lemurs live between 2 months and 28 years (+/- 2 deviations).We can also see that 15% of the 2,872 Lemurs who have died at Duke's die under 6 months old. [Code](https://github.com/NearAndDistant/data_science_with_r/blob/main/Tidy_Tuesday/2021/Week%2035%20Lemurs/%5BCode%5D)
