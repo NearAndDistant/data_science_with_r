@@ -24,28 +24,14 @@ library(tidyverse)
 library(jsonlite)
 library(httr)
 
-ergast_url <- "http://ergast.com/api/f1/{api_ask}.json?limit=1000"
+ergast_url <- "http://ergast.com/api/f1/{api_ask}.json?limit=5000"
 
 api_ask <- "drivers"
 
-raw_json_drivers <- 
+raw_json_drivers_info <- 
   httr::GET(glue::glue(ergast_url)) %>% 
   content(type = "text", encoding = "UTF-8") %>% 
   jsonlite::parse_json(simplifyVector = FALSE)
-
-api_ask <- "driverStandings"
-
-raw_json_d_standing <- 
-  httr::GET(glue::glue(ergast_url)) %>% 
-  content(type = "text", encoding = "UTF-8") %>% 
-  jsonlite::parse_json(simplifyVector = FALSE) 
-
-api_ask <- "constructorStandings"
-
-raw_json_c_standing <- 
-  httr::GET(glue::glue(ergast_url)) %>% 
-  content(type = "text", encoding = "UTF-8") %>% 
-  jsonlite::parse_json(simplifyVector = FALSE) 
 
 ```
 
@@ -62,10 +48,15 @@ hoist() is similar to unnest_wider() but only plucks out selected components, an
 library(listviewer)
 
 # creates interactive json map so we can see where we are
-jsonedit(raw_json_drivers)
+jsonedit(raw_json_standings)
+
+```
+
+#### Driver Info Table
+```{r}
 
 # create tibble of list of lists to unnest
-(json_drivers <- tibble(drivers = raw_json_drivers$MRData$DriverTable))
+json_drivers <- tibble(drivers = raw_json_drivers_info$MRData$DriverTable)
 
 # unnest tibble into unnested lists then widen
 drivers_info <- 
@@ -76,9 +67,76 @@ json_drivers %>%
 
 ```
 
+##### Drivers Info: Graphic
+```{r}
+theme_set(theme_minimal())
+
+drivers_info %>%
+  count(nationality) %>%
+  ggplot(aes(n , reorder(nationality, n), fill = nationality)) +
+  geom_col(show.legend = FALSE) +
+  labs(y = NULL)
+
+```
+
+#### F1 Seasons
+```{r}
+
+api_ask <- "seasons"
+
+raw_json_seasons <- 
+  httr::GET(glue::glue(ergast_url)) %>% 
+  content(type = "text", encoding = "UTF-8") %>% 
+  jsonlite::parse_json(simplifyVector = FALSE) 
+
+json_seasons <- tibble(season = raw_json_seasons$MRData$SeasonTable)
+
+seasons <- 
+json_seasons %>%
+  unnest_longer(season) %>% 
+  unnest_wider(season) %>%
+  select(-url)
+
+```
+
+#### Driver Standing Table
+```{r}
+
+seasons_vector <- unlist(seasons[1:6,])
+
+season_list_master <- as_tibble()
+
+for(i in seasons_vector)
+{
+api_ask <- paste0(i,"/driverStandings")
+
+raw_json_standings <- 
+  httr::GET(glue::glue(ergast_url)) %>% 
+  content(type = "text", encoding = "UTF-8") %>% 
+  jsonlite::parse_json(simplifyVector = FALSE) 
+
+# create tibble of list of lists to unnest
+season_list <- tibble(season = raw_json_standings$MRData$StandingsTable$StandingsLists[[1]]$DriverStandings)
+
+# unnest tibble into unnested lists then widen
+season_list <- season_list %>% unnest_wider(season) %>% mutate(season = i)
+
+season_list_master <- rbind(season_list_master , season_list)
+}
+
+```
+
+
 ```{r}
 
 driver_standings <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-09-07/driver_standings.csv')
+
+api_ask <- "constructorStandings"
+
+raw_json_c_standing <- 
+  httr::GET(glue::glue(ergast_url)) %>% 
+  content(type = "text", encoding = "UTF-8") %>% 
+  jsonlite::parse_json(simplifyVector = FALSE) 
 
 ```
 
