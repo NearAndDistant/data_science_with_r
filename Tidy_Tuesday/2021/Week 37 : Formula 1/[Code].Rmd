@@ -12,6 +12,16 @@ Adding power makes you faster on the straights. Subtracting weight makes you fas
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+##### Design
+```{r}
+library(showtext); showtext_auto()
+
+font_add_google("Timmana" , "timmana")
+text <- "timmana"
+
+```
+
+
 #### Glue
 Glue offers interpreted string literals that are small, fast, and dependency-free. Glue does this by embedding R expressions in curly braces which are then evaluated and inserted into the argument string. We can use this to dynamically call the Ergast API. For instance:
 
@@ -102,12 +112,11 @@ json_seasons %>%
 #### Driver Standing Table
 ```{r}
 
-seasons_vector <- unlist(seasons[1:6,])
+seasons_vector <- unlist(seasons)
 
-season_list_master <- as_tibble()
+season_list_master <- tibble()
 
-for(i in seasons_vector)
-{
+for(i in seasons_vector){
 api_ask <- paste0(i,"/driverStandings")
 
 raw_json_standings <- 
@@ -126,18 +135,72 @@ season_list_master <- rbind(season_list_master , season_list)
 
 ```
 
-
+#### Unnesting Seasons
 ```{r}
 
-driver_standings <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-09-07/driver_standings.csv')
+f1_complete <-
+season_list_master %>%
+  unnest(Constructors) %>%
+  unnest_wider(Constructors) %>%
+  select(-url , constructor = name , con_nationality = nationality) %>%
+  unnest_wider(Driver) %>%
+  select(season , everything(), -url, -positionText) %>%
+  mutate(points = as.numeric(points) , 
+         wins   = as.numeric(wins)) %>%
+  janitor::clean_names()
 
-api_ask <- "constructorStandings"
-
-raw_json_c_standing <- 
-  httr::GET(glue::glue(ergast_url)) %>% 
-  content(type = "text", encoding = "UTF-8") %>% 
-  jsonlite::parse_json(simplifyVector = FALSE) 
+# Vector of Constructors
+constructor_list <- unlist(unique(f1_complete$constructor))
 
 ```
 
+##### F1 Constructor Points
+```{r}
+
+f1_tot_points <- 
+f1_complete %>%
+  group_by(season , position , constructor) %>%
+  summarise(tot_points = sum(as.numeric(points))) %>%
+  group_by(season) %>%
+  mutate(pc_point = tot_points / sum(tot_points)) %>%
+  filter(tot_points != 0)
+
+f1_season_winners <-
+  f1_tot_points %>%
+  group_by(season) %>%
+  mutate(tot_points = sum(tot_points)) %>%
+  mutate(constructor = paste("Winner:", constructor)) %>%
+  mutate(constructor = if_else(season == "1954" & constructor == "Winner: Maserati", "Joint: Masterati & Mercedes", constructor)) %>%
+  filter(position == 1, season != "1954" | constructor != "Winner: Mercedes")
+
+```
+
+##### F1 Constructor Graphic
+```{r}
+
+f1_tot_points %>%
+  ggplot(aes(pc_point , season , fill = constructor)) +
+  geom_col(position = "stack" , show.legend = FALSE) +
+  scale_fill_viridis_d() + 
+  geom_text(data = f1_season_winners , x = 1.01 , aes(y = season , label = constructor) , hjust = 0 , family = text) + 
+  scale_x_continuous(labels = scales::percent) +
+  labs(x = "Season Total Points" , 
+       y = NULL) +
+  theme(
+        panel.grid = element_blank(),
+        axis.text = element_text(family = text, size = 12),
+        axis.text.y = element_text(margin = margin(r = -45))
+        )
+
+```
+
+```{r}
+[which(f1_tot_points$position == "1")]
+
+  # https://datavizpyr.com/direct-labeling-with-secondary-axis-trick-ggplot2-r/
+  #geom_text(data = f1_season_winners , 
+  #          aes(x = reorder(season, -season) , y = tot_points , 
+  #              label = paste0("Winner: " , f1_tot_points$constructor[which(f1_tot_points$position == "1")])),
+  #          hjust = -0.1, size = 3) + 
+```
 
