@@ -45,7 +45,7 @@ hoist() is similar to unnest_wider() but only plucks out selected components, an
 library(listviewer)
 
 # creates interactive json map so we can see where we are
-jsonedit(raw_json_standings)
+jsonedit(raw_json_drivers_info)
 
 ```
 
@@ -94,12 +94,12 @@ json_seasons %>%
   unnest_wider(season) %>%
   select(-url)
 
+seasons_vector <- unlist(seasons)
+
 ```
 
 #### Driver Standing Table
 ```{r}
-
-seasons_vector <- unlist(seasons)
 
 season_list_master <- tibble()
 
@@ -166,7 +166,7 @@ f1_season_winners <-
 
 f1_season_top <-
   f1_tot_points %>%
-  mutate(season = as.numeric(season)) %>%
+  #mutate(season = as.numeric(season)) %>%
   mutate(constructor_label = paste("Winner:", constructor)) %>%
   mutate(constructor_label = if_else(season == "1951" & constructor == "Farrari", "Joint: Ferrari & Talbot-Lago", constructor_label)) %>%
   filter(season != "1951" | constructor != "Talbot-Lago") %>%
@@ -233,17 +233,14 @@ f1_tot_points %>%
   scale_color_manual(values = palette) +
   scale_x_continuous(labels = scales::percent) +
   coord_cartesian(clip = "off") + 
-  labs(title = "F1 Teams" , 
-       subtitle = '"Adding power makes you faster on the straights. Subtracting weight makes you faster everywhere." - Colin Chapman' , 
-       x = "Season Points (%)" , y = NULL) +
+  labs(title = NULL , x = NULL , y = NULL) +
   theme(text = element_text(family = text),
         plot.title = element_text(hjust = 0.05 , size = 30),
-        plot.subtitle = element_text(hjust = -0.05 , size = 15),
         panel.grid = element_blank(),
         axis.text.x = element_text(size = 12),
-        axis.title.x = element_text(size = 18 , vjust = -4),
-        axis.text.y = element_text(size = 10 , margin = margin(r = -20)),
-        plot.margin = margin(1,22,0.5,0.5, unit = "cm"))
+        axis.title.x = element_text(size = 12 , vjust = -12),
+        axis.text.y = element_text(size = 10 , margin = margin(r = -18)),
+        plot.margin = margin(3.5,24,0.5,0.5, unit = "cm"))
 
 ```
 
@@ -251,7 +248,7 @@ f1_tot_points %>%
 ```{r}
 library(ggstream)
 
-#plot_season_top <-
+plot_season_top <-
 f1_season_top %>%
   ggplot(aes(season , pc_point)) +
   ggstream::geom_stream(aes(fill = constructor_lump)) +
@@ -271,26 +268,50 @@ f1_season_top %>%
 ##### Podium Plot
 ```{r}
 
-#plot_winner <-
+plot_winner <-
 f1_season_top %>%
   mutate(position = factor(position , levels = c(2,1,3))) %>%
   ggplot(aes(position , pc_point , fill = constructor)) +
-  geom_col(position = "dodge" , show.legend = FALSE) +
-  #geom_text(aes(label = position , x = position , y = pc_point), nudge_y = 0.05 , family = text) +
+  geom_col(position = "dodge" ) +
+  guides(fill = guide_legend(nrow = 2 , title.position = "top")) +
   geom_text(aes(label = season, x = 2 , y = -.05) , family = text) +
-  geom_text(data = f1_season_winners , aes(label = paste0("(",full_name,")"), x = 2) , y = -0.1 , family = text, size = 3) +
+  geom_text(data = f1_season_winners , aes(label = paste0("(",full_name,")"), x = 2) , y = -0.12 , family = text, size = 3) +
   scale_fill_manual(values = palette) +
-  #scale_fill_viridis_d(option = "viridis") +
   coord_cartesian(clip = "off") +
   facet_wrap(~season) +
+  labs(fill = "Race Team") +
   theme(text = element_text(family = text),
-        #panel.background = element_rect(fill = colorspace::lighten("#809096", 0.75) , color = NA),
+        legend.title = element_text(hjust = 0 , size = 12),
+        legend.position = c(-0.2,1.02),
+        legend.justification = c(0,0),
+        legend.spacing.x = unit(0.2 , "lines") ,
         strip.text = element_blank(),
         panel.grid = element_blank(),
         axis.title = element_blank(),
         axis.text = element_blank(),
         panel.spacing.y = unit(1, "lines"),
-        plot.margin = margin(0,1,0,1, unit = "cm"))
+        plot.margin = margin(0.5,1,0,1, unit = "cm"))
+
+```
+
+##### Podium Plot Legend
+```{r}
+
+legend_podium <-
+f1_season_top %>%
+  filter(season == "2001") %>%
+  mutate(position = case_when(position == 1 ~"1st" , position == 2 ~ "2nd", position == 3 ~ "3rd")) %>%
+  mutate(position = factor(position , levels = c("2nd","1st","3rd"))) %>%
+  ggplot(aes(position , pc_point)) +
+  geom_col(position = "dodge" , fill = "grey60" , show.legend = FALSE) +
+  geom_text(aes(label = season, x = 2 , y = -0.06) , family = text, size = 4) +
+  geom_text(label = "(Michael Schumacher)", x = 2 , y = -0.14 , family = text, size = 3) +
+  geom_text(aes(label = position), nudge_y = 0.05, family = text , size = 4) +
+  geom_curve(x = 2, y = -0.18, xend = 6, yend = -0.20, arrow = arrow(length = unit(0.03, "npc"))) +
+  geom_text(x = 6, y = -0.15, label = "Winner", family = text , size = 3) +
+  coord_cartesian(clip = "off") +
+  theme_void() +
+  theme(plot.margin = margin(0,0,2,0, "cm"))
 
 ```
 
@@ -299,8 +320,24 @@ f1_season_top %>%
 ```{r}
 library(cowplot)
 
+legend <- get_legend(plot_contructor_points)
+
 ggdraw(plot_contructor_points) +
-  draw_plot(plot_winner , x = 0.39 , y = 0.05 , height = 0.85 , width = 0.62)
+  draw_plot(plot_winner , x = 0.35 , y = 0.05 , height = 0.86 , width = 0.66) +
+  draw_image("https://www.thedesignfrontier.com/wp-content/uploads/2019/05/f1-logo.png" , 
+             x = -0.03 , y = 0.76 , height = 0.35 , width = 0.35) +
+  draw_text('"Adding power makes you faster on the straights. Subtracting weight makes you faster everywhere."',
+            x = 0.25 , y = 0.9 , hjust = 0 , family = text) +
+  draw_text('Race Team Points Per Season (%)',
+            x = 0.03 , y = 0.87 , hjust = 0 , family = text) +
+  draw_plot(legend_podium , x = 0.86 , y = 0.82 , height = 0.15 , width = 0.05) +
+  theme(plot.background = element_rect(fill = "white" , color = "white"))
 
 ```
 
+#### Saving
+```{r}
+
+ggsave(here::here("F1.png"), dpi = 360, height = 10, width = 15)
+
+```
