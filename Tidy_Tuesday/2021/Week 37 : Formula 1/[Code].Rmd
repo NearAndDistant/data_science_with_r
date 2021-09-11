@@ -166,7 +166,6 @@ f1_season_winners <-
 
 f1_season_top <-
   f1_tot_points %>%
-  #mutate(season = as.numeric(season)) %>%
   mutate(constructor_label = paste("Winner:", constructor)) %>%
   mutate(constructor_label = if_else(season == "1951" & constructor == "Farrari", "Joint: Ferrari & Talbot-Lago", constructor_label)) %>%
   filter(season != "1951" | constructor != "Talbot-Lago") %>%
@@ -178,7 +177,7 @@ f1_season_top <-
   filter(season != "1959" | constructor != "BRM") %>%
   filter(season != "1960" | constructor != "Team Lotus") %>%
   filter(season != "1961" | constructor != "Ferguson") %>%
-  filter(season != "1966" | position == 2 | constructor != "Cooper-Maserati") %>%
+  filter(season != "1966" | position != 2 | constructor != "Cooper-Maserati") %>%
   filter(season != "1967" | constructor != "Lotus-Ford" & constructor != "Lotus-Climax") %>%
   filter(season != "1968" | constructor != "McLaren-BRM" & constructor != "McLaren-Ford") %>%
   filter(season != "1971" | constructor != "March-Ford") %>%
@@ -208,7 +207,7 @@ c(
 "Team Lotus"    = colorspace::lighten("#c2f002", 0.25),
 "Red Bull"      = colorspace::lighten("#0600EF", 0.25),
 "McLaren"       = colorspace::lighten("#FF8700", 0.25),
-"Lotus-Climax"  = colorspace::lighten("#476b57", 0.25),
+"Lotus-Climax"  = colorspace::lighten("grey30", 0.25),
 "Williams"      = colorspace::lighten("#005AFF", 0.25),
 "Benetton"      = colorspace::lighten("#008860", 0.25),
 "Alfa Romeo"    = colorspace::lighten("#8B0025", 0.25),
@@ -271,7 +270,7 @@ f1_season_top %>%
 plot_winner <-
 f1_season_top %>%
   mutate(position = factor(position , levels = c(2,1,3))) %>%
-  ggplot(aes(position , pc_point , fill = constructor)) +
+  ggplot(aes(position , pc_point , fill = constructor_lump)) +
   geom_col(position = "dodge" ) +
   guides(fill = guide_legend(nrow = 2 , title.position = "top")) +
   geom_text(aes(label = season, x = 2 , y = -.05) , family = text) +
