@@ -132,9 +132,9 @@ season_list_master %>%
   select(-url , constructor = name , con_nationality = nationality) %>%
   unnest_wider(Driver) %>%
   select(season , everything(), -url, -positionText) %>%
-  mutate(position = as.numeric(position),
-         points = as.numeric(points) , 
-         wins   = as.numeric(wins)) %>%
+  mutate(position  = as.numeric(position),
+         points    = as.numeric(points) , 
+         wins      = as.numeric(wins)) %>%
   janitor::clean_names()
 
 ```
@@ -142,25 +142,47 @@ season_list_master %>%
 ##### F1 Constructor Points
 ```{r}
 
+levels = c("Ferrari" , "Maserati" , "Matra-Ford" , "Mercedes" , "Team Lotus" , "Red Bull"  , "McLaren" , "Lotus-Climax" , 
+           "Williams" , "Benetton" ,  "Alfa Romeo", "BRM" , "Tyrrell" , "Brabham" , "Renault" , "Other")  
+
 f1_tot_points <- 
 f1_complete %>%
-  group_by(season , position , constructor) %>%
+  mutate(full_name = paste(given_name , family_name , sep = " ")) %>%
+  group_by(season , position , constructor , full_name) %>%
   summarise(tot_points = sum(as.numeric(points))) %>%
   group_by(season) %>%
   mutate(pc_point = tot_points / sum(tot_points)) %>%
-  mutate(constructor_lump = if_else(pc_point >= 0.10 , constructor , "Other")) %>%
-  mutate(constructor_lump = factor(constructor , ordered = TRUE)) %>%
   ungroup() %>%
+  mutate(constructor_lump = if_else(constructor %in% levels , constructor , "Other")) %>%
+  mutate(constructor_lump = factor(constructor_lump , levels = levels , ordered = TRUE)) %>%
   filter(pc_point != 0) # valve for controlling how many constructors we see in graphic
 
 
 f1_season_winners <-
   f1_tot_points %>%
-  group_by(season) %>%
-  mutate(tot_points = sum(tot_points)) %>%
   mutate(constructor_label = paste("Winner:", constructor)) %>%
   mutate(constructor_label = if_else(season == "1954" & constructor == "Maserati", "Joint: Masterati & Mercedes", constructor_label)) %>%
   filter(position == 1, season != "1954" | constructor != "Mercedes")
+
+f1_season_top <-
+  f1_tot_points %>%
+  mutate(season = as.numeric(season)) %>%
+  mutate(constructor_label = paste("Winner:", constructor)) %>%
+  mutate(constructor_label = if_else(season == "1951" & constructor == "Farrari", "Joint: Ferrari & Talbot-Lago", constructor_label)) %>%
+  filter(season != "1951" | constructor != "Talbot-Lago") %>%
+  filter(season != "1954" | constructor != "Mercedes") %>%
+  filter(season != "1955" | constructor != "Lancia") %>%
+  filter(season != "1957" | constructor != "Vanwall") %>%
+  filter(season != "1958" | constructor != "Cooper") %>%
+  filter(season != "1959" | constructor != "Vanwall") %>%
+  filter(season != "1959" | constructor != "BRM") %>%
+  filter(season != "1960" | constructor != "Team Lotus") %>%
+  filter(season != "1961" | constructor != "Ferguson") %>%
+  filter(season != "1966" | position == 2 | constructor != "Cooper-Maserati") %>%
+  filter(season != "1967" | constructor != "Lotus-Ford" & constructor != "Lotus-Climax") %>%
+  filter(season != "1968" | constructor != "McLaren-BRM" & constructor != "McLaren-Ford") %>%
+  filter(season != "1971" | constructor != "March-Ford") %>%
+  filter(position %in% c(1,2,3))
 
 # Vector of Constructors
 constructor_list <- unlist(unique(f1_tot_points$constructor[which(f1_tot_points$pc_point > 0.20)]))
@@ -189,20 +211,22 @@ c(
 "Lotus-Climax"  = colorspace::lighten("#476b57", 0.25),
 "Williams"      = colorspace::lighten("#005AFF", 0.25),
 "Benetton"      = colorspace::lighten("#008860", 0.25),
-"Other"         = "grey80"
+"Alfa Romeo"    = colorspace::lighten("#8B0025", 0.25),
+"BRM"           = colorspace::lighten("#576c64", 0.25),
+"Tyrrell"       = colorspace::lighten("#005fe0", 0.25),
+"Brabham"       = colorspace::lighten("#F3EBE1", 0.25),
+"Renault"       = colorspace::lighten("#F7D747", 0.25),
+"Other"         = "grey90"
 )
-
-levels = c("Ferrari" , "Maserati" , "Matra-Ford" , "Mercedes" , "Team Lotus" , "Red Bull"  , "McLaren" , "Lotus-Climax" , "Williams" ,"Benetton" ,  "Other")  
-
 ```
 
 ##### F1 Constructor Graphic
 ```{r}
 
 f1_tot_points %>%
-  ggplot(aes(pc_point , season , fill = constructor_lump)) +
+  ggplot(aes(pc_point , season , fill = fct_rev(constructor_lump))) +
   geom_col(position = "stack" ,  show.legend = FALSE) +
-  geom_point(data = f1_season_winners , x = 1.01 , aes(y = season , color = constructor) , show.legend = FALSE) +
+  geom_point(data = f1_season_winners , x = 1.01 , aes(y = season , color = constructor) ,size = 2.5  , show.legend = FALSE) +
   geom_text(data = f1_season_winners , x = 1.02  , aes(y = season , label = constructor_label) , hjust = 0 , family = text, show.legend = FALSE) +
   scale_fill_manual(values = palette) +
   scale_color_manual(values = palette) +
@@ -219,6 +243,22 @@ f1_tot_points %>%
         axis.title.x = element_text(size = 18 , vjust = -0.5),
         axis.text.y = element_text(size = 10 , margin = margin(r = -40)),
         plot.margin = margin(1,4,0.5,1, unit = "cm"))
+
+```
+
+##### ggstream
+```{r}
+library(ggstream)
+
+f1_season_top %>%
+  ggplot(aes(season , position)) +
+  ggstream::geom_stream(aes(fill = constructor_lump) , show.legend = FALSE) +
+  scale_fill_manual(values = palette) +
+  #scale_x_continuous(breaks = seq(1950, max(f1_season_top$season) , 10))
+  facet_wrap(~position , ncol = 1) +
+  theme(panel.grid = element_blank(), 
+        axis.text.y = element_blank() , 
+        axis.title = element_blank())
 
 ```
 
