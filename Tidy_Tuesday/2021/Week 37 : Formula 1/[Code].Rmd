@@ -9,6 +9,11 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+##### Reference
+https://brundling.neocities.org/concours.html
+http://ergast.com/mrd/
+Simplifying Lists: https://cfss.uchicago.edu/notes/simplify-nested-lists/
+
 #### Glue
 Glue offers interpreted string literals that are small, fast, and dependency-free. Glue does this by embedding R expressions in curly braces which are then evaluated and inserted into the argument string. We can use this to dynamically call the Ergast API. For instance:
 
