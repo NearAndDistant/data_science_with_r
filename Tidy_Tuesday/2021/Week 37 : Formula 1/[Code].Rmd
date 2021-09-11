@@ -302,7 +302,7 @@ f1_season_top %>%
   mutate(position = case_when(position == 1 ~"1st" , position == 2 ~ "2nd", position == 3 ~ "3rd")) %>%
   mutate(position = factor(position , levels = c("2nd","1st","3rd"))) %>%
   ggplot(aes(position , pc_point)) +
-  geom_col(position = "dodge" , fill = "grey60" , show.legend = FALSE) +
+  geom_col(position = "dodge" , fill = "white" , color = "grey20" , show.legend = FALSE) +
   geom_text(aes(label = season, x = 2 , y = -0.06) , family = text, size = 4) +
   geom_text(label = "(Michael Schumacher)", x = 2 , y = -0.14 , family = text, size = 3) +
   geom_text(aes(label = position), nudge_y = 0.05, family = text , size = 4) +
@@ -327,8 +327,8 @@ ggdraw(plot_contructor_points) +
              x = -0.03 , y = 0.76 , height = 0.35 , width = 0.35) +
   draw_text('"Adding power makes you faster on the straights. Subtracting weight makes you faster everywhere."',
             x = 0.25 , y = 0.9 , hjust = 0 , family = text) +
-  draw_text('Race Team Points Per Season (%)',
-            x = 0.03 , y = 0.87 , hjust = 0 , family = text) +
+  draw_text('Race Team Points Per Season (%)', x = 0.03 , y = 0.87 , hjust = 0 , family = text) +
+  draw_text('Data: ergast.com/mrd/db | Graphic: @NearAndDistant', x = 0.255 , y = 0.88 , hjust = 0 , family = text , size = 9) +
   draw_plot(legend_podium , x = 0.86 , y = 0.82 , height = 0.15 , width = 0.05) +
   theme(plot.background = element_rect(fill = "white" , color = "white"))
 
