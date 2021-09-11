@@ -223,42 +223,84 @@ c(
 ##### F1 Constructor Graphic
 ```{r}
 
+#plot_contructor_points <-
 f1_tot_points %>%
   ggplot(aes(pc_point , season , fill = fct_rev(constructor_lump))) +
   geom_col(position = "stack" ,  show.legend = FALSE) +
   geom_point(data = f1_season_winners , x = 1.01 , aes(y = season , color = constructor) ,size = 2.5  , show.legend = FALSE) +
-  geom_text(data = f1_season_winners , x = 1.02  , aes(y = season , label = constructor_label) , hjust = 0 , family = text, show.legend = FALSE) +
+  geom_text(data = f1_season_winners ,  x = 1.02  , aes(y = season , label = constructor_label) , size = 3, hjust = 0 , family = text, show.legend = FALSE) +
   scale_fill_manual(values = palette) +
   scale_color_manual(values = palette) +
   scale_x_continuous(labels = scales::percent) +
-  coord_cartesian(clip = "off") +
+  coord_cartesian(clip = "off") + 
   labs(title = "F1 Teams" , 
        subtitle = "Adding power makes you faster on the straights. Subtracting weight makes you faster everywhere. - Colin Chapman" , 
        x = "Season Points (%)" , y = NULL) +
   theme(text = element_text(family = text),
         plot.title = element_text(hjust = 0.05 , size = 30),
-        plot.subtitle = element_text(hjust = 0.15 , size = 15),
+        plot.subtitle = element_text(hjust = -0.1 , size = 15),
         panel.grid = element_blank(),
         axis.text.x = element_text(size = 18),
         axis.title.x = element_text(size = 18 , vjust = -0.5),
-        axis.text.y = element_text(size = 10 , margin = margin(r = -40)),
-        plot.margin = margin(1,4,0.5,1, unit = "cm"))
+        axis.text.y = element_text(size = 10 , margin = margin(r = -20)),
+        plot.margin = margin(1,20,0.5,1, unit = "cm"))
 
 ```
 
-##### ggstream
+##### GGStream Position
 ```{r}
 library(ggstream)
 
+#plot_season_top <-
 f1_season_top %>%
-  ggplot(aes(season , position)) +
-  ggstream::geom_stream(aes(fill = constructor_lump) , show.legend = FALSE) +
+  ggplot(aes(season , pc_point)) +
+  ggstream::geom_stream(aes(fill = constructor_lump)) +
   scale_fill_manual(values = palette) +
-  #scale_x_continuous(breaks = seq(1950, max(f1_season_top$season) , 10))
-  facet_wrap(~position , ncol = 1) +
-  theme(panel.grid = element_blank(), 
-        axis.text.y = element_blank() , 
+  coord_flip() +
+  labs(fill = "Race Team") +
+  facet_wrap(~position , nrow = 1) +
+  theme(text = element_text(family = text),
+        #panel.spacing = unit(-3 , "lines"),
+        strip.text = element_blank(),
+        panel.grid = element_blank(), 
+        axis.text = element_blank() , 
         axis.title = element_blank())
+
+```
+
+##### Podium Plot
+```{r}
+
+plot_winner <-
+f1_season_top %>%
+  mutate(position = factor(position , levels = c(2,1,3))) %>%
+  ggplot(aes(position , pc_point , fill = constructor)) +
+  geom_col(position = "dodge" , show.legend = FALSE) +
+  #geom_text(aes(label = position , x = position , y = pc_point), nudge_y = 0.05 , family = text) +
+  geom_text(aes(label = season, x = 2 , y = -.05) , family = text) +
+  geom_text(data = f1_season_winners , aes(label = paste0("(",full_name,")"), x = 2) , y = -0.1 , family = text, size = 3) +
+  scale_fill_manual(values = palette) +
+  #scale_fill_viridis_d(option = "viridis") +
+  coord_cartesian(clip = "off") +
+  facet_wrap(~season) +
+  theme(text = element_text(family = text),
+        #panel.background = element_rect(fill = colorspace::lighten("#809096", 0.75) , color = NA),
+        strip.text = element_blank(),
+        panel.grid = element_blank(),
+        axis.title = element_blank(),
+        axis.text = element_blank(),
+        panel.spacing.y = unit(1, "lines"),
+        plot.margin = margin(0.5,1,0.5,1, unit = "cm"))
+
+```
+
+
+##### Final Plot
+```{r}
+library(cowplot)
+
+ggdraw(plot_contructor_points) +
+  draw_plot(plot_season_top , x = 0.5 , y = 0.01 , height = 0.8 , width = 0.5)
 
 ```
 
