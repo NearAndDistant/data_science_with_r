@@ -132,7 +132,8 @@ season_list_master %>%
   select(-url , constructor = name , con_nationality = nationality) %>%
   unnest_wider(Driver) %>%
   select(season , everything(), -url, -positionText) %>%
-  mutate(position  = as.numeric(position),
+  mutate(season    = factor(season , ordered = TRUE),
+         position  = as.numeric(position),
          points    = as.numeric(points) , 
          wins      = as.numeric(wins)) %>%
   janitor::clean_names()
@@ -156,7 +157,6 @@ f1_complete %>%
   mutate(constructor_lump = if_else(constructor %in% levels , constructor , "Other")) %>%
   mutate(constructor_lump = factor(constructor_lump , levels = levels , ordered = TRUE)) %>%
   filter(pc_point != 0) # valve for controlling how many constructors we see in graphic
-
 
 f1_season_winners <-
   f1_tot_points %>%
@@ -223,27 +223,27 @@ c(
 ##### F1 Constructor Graphic
 ```{r}
 
-#plot_contructor_points <-
+plot_contructor_points <-
 f1_tot_points %>%
-  ggplot(aes(pc_point , season , fill = fct_rev(constructor_lump))) +
+  ggplot(aes(pc_point , fct_rev(season) , fill = fct_rev(constructor_lump))) +
   geom_col(position = "stack" ,  show.legend = FALSE) +
-  geom_point(data = f1_season_winners , x = 1.01 , aes(y = season , color = constructor) ,size = 2.5  , show.legend = FALSE) +
-  geom_text(data = f1_season_winners ,  x = 1.02  , aes(y = season , label = constructor_label) , size = 3, hjust = 0 , family = text, show.legend = FALSE) +
+  #geom_point(data = f1_season_winners , x = 1.01 , aes(y = season , color = constructor) ,size = 2.5  , show.legend = FALSE) +
+  #geom_text(data = f1_season_winners ,  x = 1.02  , aes(y = season , label = constructor_label) , size = 3, hjust = 0 , family = text, show.legend = FALSE) +
   scale_fill_manual(values = palette) +
   scale_color_manual(values = palette) +
   scale_x_continuous(labels = scales::percent) +
   coord_cartesian(clip = "off") + 
   labs(title = "F1 Teams" , 
-       subtitle = "Adding power makes you faster on the straights. Subtracting weight makes you faster everywhere. - Colin Chapman" , 
+       subtitle = '"Adding power makes you faster on the straights. Subtracting weight makes you faster everywhere." - Colin Chapman' , 
        x = "Season Points (%)" , y = NULL) +
   theme(text = element_text(family = text),
         plot.title = element_text(hjust = 0.05 , size = 30),
-        plot.subtitle = element_text(hjust = -0.1 , size = 15),
+        plot.subtitle = element_text(hjust = -0.05 , size = 15),
         panel.grid = element_blank(),
-        axis.text.x = element_text(size = 18),
-        axis.title.x = element_text(size = 18 , vjust = -0.5),
+        axis.text.x = element_text(size = 12),
+        axis.title.x = element_text(size = 18 , vjust = -4),
         axis.text.y = element_text(size = 10 , margin = margin(r = -20)),
-        plot.margin = margin(1,20,0.5,1, unit = "cm"))
+        plot.margin = margin(1,22,0.5,0.5, unit = "cm"))
 
 ```
 
@@ -271,7 +271,7 @@ f1_season_top %>%
 ##### Podium Plot
 ```{r}
 
-plot_winner <-
+#plot_winner <-
 f1_season_top %>%
   mutate(position = factor(position , levels = c(2,1,3))) %>%
   ggplot(aes(position , pc_point , fill = constructor)) +
@@ -290,7 +290,7 @@ f1_season_top %>%
         axis.title = element_blank(),
         axis.text = element_blank(),
         panel.spacing.y = unit(1, "lines"),
-        plot.margin = margin(0.5,1,0.5,1, unit = "cm"))
+        plot.margin = margin(0,1,0,1, unit = "cm"))
 
 ```
 
@@ -300,7 +300,7 @@ f1_season_top %>%
 library(cowplot)
 
 ggdraw(plot_contructor_points) +
-  draw_plot(plot_season_top , x = 0.5 , y = 0.01 , height = 0.8 , width = 0.5)
+  draw_plot(plot_winner , x = 0.39 , y = 0.05 , height = 0.85 , width = 0.62)
 
 ```
 
