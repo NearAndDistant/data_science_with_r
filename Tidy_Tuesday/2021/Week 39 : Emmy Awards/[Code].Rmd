@@ -1,0 +1,242 @@
+---
+title: "The Emmys"
+author: "NearAndDistant"
+date: "27/09/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+dir.create(here::here('Week 39 : Emmy Awards'))
+
+```
+
+#### Importing
+```{r}
+library(tidyverse)
+
+emmy_raw <- 
+read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-09-21/nominees.csv')
+
+kaggle_emmy_raw <-
+read_csv("https://raw.githubusercontent.com/NearAndDistant/data_science_with_r/main/Tidy_Tuesday/2021/Week%2039%20%3A%20Emmy%20Awards/the_emmy_awards.csv")
+
+```
+
+```{r}
+
+emmy_temp <- 
+emmy_raw %>%
+  mutate(category = str_extract(category, "[^-]+")) %>%
+  mutate(category = str_to_title(category)) %>%
+  filter(year > 2019) %>%
+  select(year , category , nominee = title , company = distributor , type) %>%
+  distinct() # quite a few double counting going on in this datset so distinct allows us to bypass
+
+kaggle_temp <- 
+kaggle_emmy_raw %>%
+  mutate(win = if_else(win == TRUE, "Winner", "Nominee")) %>%
+  select(year , category , nominee , company , type = win)
+
+emmys <-
+  rbind(emmy_temp , kaggle_temp) %>%
+  mutate(category = str_to_title(category)) %>%
+  drop_na(company)
+
+```
+
+#### Cleaning
+```{r}
+
+emmys_cln <-
+emmys %>%
+  mutate(company = if_else(str_detect(company , "youtube|YouTube"), "YouTube", company),
+         company = if_else(str_detect(company , "ABC|abc"), "ABC", company),
+         company = if_else(str_detect(company , "AMC"), "AMC", company),
+         company = if_else(str_detect(company , "Amazon|Prime"), "Amazon", company),
+         company = if_else(str_detect(company , "Apple"), "Apple", company),
+         company = if_else(str_detect(company , "Disney"), "Disney", company),
+         company = if_else(str_detect(company , "CTN|cartoonnetwork|Cartoon Network"), "Cartoon Network", company),
+         company = if_else(str_detect(company , "CBS"), "CBS", company),
+         company = if_else(str_detect(company , "ComedyCentral|Comedy Central"), "Comedy Central", company),
+         company = if_else(str_detect(company , "Discovery|discovery"), "Discovery Chanel", company),
+         company = if_else(str_detect(company , "Fox|FOX"), "FOX", company),
+         company = if_else(str_detect(company , "FX"), "FX", company),
+         company = if_else(str_detect(company , "HBO"), "HBO", company),
+         company = if_else(str_detect(company , "NatGeo|Nat Geo|National Geographic"), "National Geographic", company),
+         company = if_else(str_detect(company , "NBC"), "NBC", company),
+         company = if_else(str_detect(company , "SHO|Showtime"), "Showtime", company),
+         company = if_else(str_detect(company , "TBS"), "TBS", company))
+
+```
+
+# Primetime Emmys
+
+### Programs
+Outstanding Comedy Series
+Outstanding Drama Series
+Outstanding Limited or Anthology Series
+Outstanding Competition Program
+Outstanding Television Movie
+Outstanding Variety Sketch Series
+Outstanding Variety Talk Series
+
+### Directing
+Outstanding Directing for a Comedy Series
+Outstanding Directing for a Drama Series
+Outstanding Directing for a Limited or Anthology Series or Movie
+Outstanding Directing for a Variety Series
+### Writing
+Outstanding Writing for a Comedy Series
+Outstanding Writing for a Drama Series
+Outstanding Writing for a Limited or Anthology Series or Movie
+Outstanding Writing for a Variety Series
+
+## Acting
+
+### Lead actor
+Outstanding Lead Actor in a Comedy Series
+Outstanding Lead Actor in a Drama Series
+Outstanding Lead Actor in a Limited or Anthology Series or Movie
+
+### Lead actress
+Outstanding Lead Actress in a Comedy Series
+Outstanding Lead Actress in a Drama Series
+Outstanding Lead Actress in a Limited or Anthology Series or Movie
+
+### Supporting actor
+Outstanding Supporting Actor in a Comedy Series
+Outstanding Supporting Actor in a Drama Series
+Outstanding Supporting Actor in a Limited or Anthology Series or Movie
+
+### Supporting actress
+Outstanding Supporting Actress in a Comedy Series
+Outstanding Supporting Actress in a Drama Series
+Outstanding Supporting Actress in a Limited or Anthology Series or Movie
+
+```{r}
+
+# Programs
+outstanding_programs <- c(
+"Outstanding Comedy Series",
+"Outstanding Drama Series",
+"Outstanding Limited Series",
+"Outstanding Anthology Series",
+"Outstanding Competition Program",
+"Outstanding Television Movie",
+"Outstanding Variety Sketch Series",
+"Outstanding Variety Talk Series")
+
+outstanding_lead_actor <- c(
+"Outstanding Lead Actor In A Comedy Series",
+"Outstanding Lead Actor In A Drama Series",
+"Outstanding Lead Actor In A Limited Series Or Movie")
+
+outstanding_lead_actress <- c(
+"Outstanding Lead Actress In A Comedy Series",
+"Outstanding Lead Actress In A Drama Series",
+"Outstanding Lead Actress In A Limited Series Or Movie")
+
+```
+
+```{r}
+
+emmys_primetime <-
+emmys_cln %>%
+  mutate(category = if_else(str_detect(category , paste(outstanding_programs , collapse = "|"))     , "Outstanding Programs", category),
+         category = if_else(str_detect(category , "Outstanding Directing")                          , "Outstanding Directing", category),
+         category = if_else(str_detect(category , "Outstanding Writing")                            , "Outstanding Writing", category),
+         category = if_else(str_detect(category , paste(outstanding_lead_actor , collapse = "|"))   , "Outstanding Lead Actor", category),
+         category = if_else(str_detect(category , paste(outstanding_lead_actress , collapse = "|")) , "Outstanding Lead Actress", category),
+         category = if_else(str_detect(category , "Outstanding Supporting Actress")                 , "Outstanding Supporting Actress", category),
+         category = if_else(str_detect(category , "Outstanding Supporting Actor")                   , "Outstanding Supporting Actor", category)) %>%
+  filter(category %in% c("Outstanding Programs", 
+                         "Outstanding Directing", 
+                         "Outstanding Writing", 
+                         "Outstanding Lead Actor", 
+                         "Outstanding Lead Actress", 
+                         "Outstanding Supporting Actress", 
+                         "Outstanding Supporting Actor"))
+
+```
+
+```{r}
+
+noms_10 <-
+  emmys_primetime %>% 
+  count(company) %>% 
+  filter(n > 10) %>%
+  select(company) %>%
+  unlist(use.names = FALSE)
+
+```
+
+```{r}
+library(colorspace)
+
+palette <- c(
+"A&E"             = "#304364" ,           
+"ABC"             = "#1f2032" ,           
+"AMC"             = "#ce2641" ,           
+"CBS"             = "black"   ,    
+"Comedy Central"  = "#fdc601" ,                     
+"FOX"             = "#96979B" ,  
+"FX"              = "#bca825" ,  
+"HBO"             = "#663399" ,  
+"NBC"             = "#0DB14B" ,  
+"Netflix"         = "#B20710" ,              
+"PBS"             = "#2638C4" ,                     
+"Showtime"        = "#fe0101" )
+
+```
+
+#### Sankey
+```{r}
+library(ggsankey)
+
+emmy_sankey <-
+  emmys_primetime %>%
+  filter(company %in% noms_10) %>%
+  select(company , category , type) %>% 
+  make_long(company , category , type)
+
+```
+
+```{r}
+library(showtext); showtext_auto()
+font_add_google("Cutive Mono" , "cutive")
+font_add_google("Cutive" , "cutive_bold")
+
+emmy_sankey <-
+emmy_sankey %>%
+ggplot(aes(x = x, 
+           next_x = next_x, 
+           node = node, 
+           next_node = next_node,
+           fill = node)) +
+  geom_sankey(flow.alpha = 0.5 , node.fill = "grey90" , node.color = "white" , width = 0.025 , show.legend = FALSE) +
+  geom_sankey_text(aes(label = node), size = 5, color = "black" , family = "cutive" , show.legend = FALSE) +
+  scale_fill_viridis_d(option = "turbo" , begin = 1 , end = 0.15) +
+  labs(title = ,
+       x = NULL) +
+  theme_sankey() +
+  theme(axis.text.x = element_blank(),
+        plot.margin = margin(0,-5.5,0,-5.5,unit = "cm"))
+
+```
+
+```{r}
+library(cowplot)
+
+main_text <- 
+"An Emmy Award, or simply Emmy, is a trophy presented at one of the numerous annual American\nevents or competitions that each recognize achievements in a particular sector of the television\nindustry. The Emmy is considered one of the four major entertainment awards in the United States,\nthe others being the Grammy (for music), the Oscar (Academy Award) (for film), and the Tony (for theatre).\nThe two events that receive the most media coverage are the Primetime Emmy Awards and the Daytime Emmy Awards,\nwhich recognize outstanding work in American primetime and daytime entertainment programming, respectively.\n\nHere we show those companies which have at least 10 nominations in the Primetime Emmy Awards main categories for:\nOutstanding Programs, Writing, Directing, Lead Actors and Actresses, as well as Supporting Actors and Actresses."
+
+ggdraw(emmy_sankey) +
+  draw_text("Emmy Awards\nand\nNominees" , family = "cutive_bold" , hjust = 1, size = 20, x = 0.91 , y = 0.9) +
+  draw_text("Data\n\nGraphic" , family = "cutive" , hjust = 1, size = 12, x = 0.90 , y = 0.78) +
+  draw_text("Emmys.com & Kaggle\n\n\n@NearAndDistant", family = "cutive_bold" , hjust = 1, size = 8 , x = 0.90 , y = 0.76) +
+  draw_text(main_text , family = "cutive" , hjust = 1, size = 10, x = 0.90 , y = 0.15)
+
+```
+
