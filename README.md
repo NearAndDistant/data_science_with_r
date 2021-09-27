@@ -1,5 +1,12 @@
 # Data Science with R: Projects
 
+## Emmy Awards
+The two events with the most media coverage are the Primetime Emmy Awards and the Daytime Emmy Awards,\nwhich recognize outstanding work in American primetime and daytime entertainment programming, respectively.
+
+This graphic shows those companies which have had at least 10 nominations in the Primetime Emmy Awards main categories for: Outstanding Programs, Writing, Directing, Lead Actors and Actresses, as well as Supporting Actors and Actresses. The Primetime Emmy awards have always been a consistent category so this allows us to represent a lot of data (since 1949) and how companies fed into these categories through nominations" [Code](https://github.com/NearAndDistant/data_science_with_r/tree/main/Tidy_Tuesday/2021/Week%2039%20:%20Emmy%20Awards)
+
+![primetimeemmy](https://user-images.githubusercontent.com/79040885/134993361-fd1f8d68-da85-43d6-8700-f365df0d967d.png)
+
 ## F1 Racing
 
 A few teams often dominate F1, but only for a few years at a time. [Code](https://github.com/NearAndDistant/data_science_with_r/blob/main/Tidy_Tuesday/2021/Week%2037%20:%20Formula%201/%5BCode%5D.Rmd)
