@@ -1,5 +1,11 @@
 # Data Science with R: Projects
 
+## F1 Racing
+
+A few teams often dominate F1, but only for a few years at a time. [Code](https://github.com/NearAndDistant/data_science_with_r/blob/main/Tidy_Tuesday/2021/Week%2037%20:%20Formula%201/%5BCode%5D.Rmd)
+
+![F1](https://user-images.githubusercontent.com/79040885/132963043-d054af80-73c4-4a23-8a08-b7a56c5cb0fd.png)
+
 ## The Australian Bathing Birds Study
 
 Bird baths are a familiar sight in Australian gardens but surprisingly little is known about the precise role they play in the lives of birds. 
