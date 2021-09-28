@@ -172,25 +172,6 @@ noms_10 <-
 
 ```
 
-```{r}
-library(colorspace)
-
-palette <- c(
-"A&E"             = "#304364" ,           
-"ABC"             = "#1f2032" ,           
-"AMC"             = "#ce2641" ,           
-"CBS"             = "black"   ,    
-"Comedy Central"  = "#fdc601" ,                     
-"FOX"             = "#96979B" ,  
-"FX"              = "#bca825" ,  
-"HBO"             = "#663399" ,  
-"NBC"             = "#0DB14B" ,  
-"Netflix"         = "#B20710" ,              
-"PBS"             = "#2638C4" ,                     
-"Showtime"        = "#fe0101" )
-
-```
-
 #### Sankey
 ```{r}
 library(ggsankey)
@@ -222,7 +203,7 @@ ggplot(aes(x = x,
        x = NULL) +
   theme_sankey() +
   theme(axis.text.x = element_blank(),
-        plot.margin = margin(0,-5.5,0,-5.5,unit = "cm"))
+        plot.margin = margin(0,-6,0,-5.5,unit = "cm"))
 
 ```
 
@@ -230,13 +211,20 @@ ggplot(aes(x = x,
 library(cowplot)
 
 main_text <- 
-"An Emmy Award, or simply Emmy, is a trophy presented at one of the numerous annual American\nevents or competitions that each recognize achievements in a particular sector of the television\nindustry. The Emmy is considered one of the four major entertainment awards in the United States,\nthe others being the Grammy (for music), the Oscar (Academy Award) (for film), and the Tony (for theatre).\nThe two events that receive the most media coverage are the Primetime Emmy Awards and the Daytime Emmy Awards,\nwhich recognize outstanding work in American primetime and daytime entertainment programming, respectively.\n\nHere we show those companies which have at least 10 nominations in the Primetime Emmy Awards main categories for:\nOutstanding Programs, Writing, Directing, Lead Actors and Actresses, as well as Supporting Actors and Actresses."
+"An Emmy Award, or simply Emmy, is a trophy presented at one of the numerous annual American\nevents or competitions that each recognize achievements in a particular sector of the television\nindustry. The Emmy is considered one of the four major entertainment awards in the United States,\nthe others being the Grammy (for music), Oscar (Academy Award) (for film), and Tony (for theatre).\nThe two events with the most media coverage are the Primetime Emmy Awards and the Daytime Emmy Awards,\nwhich recognize outstanding work in American primetime and daytime entertainment programming, respectively.\n\nThis graphic shows those companies which have had at least 10 nominations in the Primetime Emmy Awards\nmain categories for: Outstanding Programs, Writing, Directing, Lead Actors and Actresses, as well as Supporting\nActors and Actresses. The Primetime Emmy awards have always been a consistent category so this allows us to represent\na lot of data (since 1949) and how companies fed into these categories through nominations"
 
 ggdraw(emmy_sankey) +
-  draw_text("Emmy Awards\nand\nNominees" , family = "cutive_bold" , hjust = 1, size = 20, x = 0.91 , y = 0.9) +
+  draw_text("Emmy Awards\nand\nNominees" , family = "cutive_bold" , hjust = 1, size = 20, x = 0.90 , y = 0.9) +
   draw_text("Data\n\nGraphic" , family = "cutive" , hjust = 1, size = 12, x = 0.90 , y = 0.78) +
   draw_text("Emmys.com & Kaggle\n\n\n@NearAndDistant", family = "cutive_bold" , hjust = 1, size = 8 , x = 0.90 , y = 0.76) +
   draw_text(main_text , family = "cutive" , hjust = 1, size = 10, x = 0.90 , y = 0.15)
+
+```
+
+#### Saving
+```{r}
+
+ggsave(here::here("Week 39 : Emmy Awards/primetimeemmy.png"), dpi = 360, height = 10, width = 15)
 
 ```
 
