@@ -1,0 +1,100 @@
+---
+title: "NBER Papers"
+author: "NearAndDistant"
+date: "28/09/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+New research by NBER affiliates, circulated for discussion and comment. The NBER distributes more than 1,200 working papers each year. These papers have not been peer reviewed. Papers issued more than 18 months ago are open access. More recent papers are available without charge to affiliates of subscribing academic institutions, employees of NBER Corporate Associates, government employees in the US, journalists, and residents of low-income countries.
+
+Detailed blogpost looking over this data:
+https://bldavies.com/blog/female-representation-collaboration-nber/
+
+#### Setup & Importing
+```{r}
+
+dir.create(here::here("Week 40 : NBER Papers"))
+
+papers <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-09-28/papers.csv')
+authors <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-09-28/authors.csv')
+programs <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-09-28/programs.csv')
+paper_authors <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-09-28/paper_authors.csv')
+paper_programs <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-09-28/paper_programs.csv')
+
+```
+
+#### Joining
+```{r}
+library(tidyverse)
+
+nber <-
+papers %>%
+  left_join(paper_programs , by = "paper") %>%
+  left_join(programs , by = "program") %>%
+  select(year , program_category , program , program_desc , title)
+
+```
+
+#### Plotting
+```{r}
+library(ggalluvial)
+library(showtext); showtext_auto()
+font_add_google("Oswald" , "oswald")
+font_add_google("Gemunu Libre" , "libre")
+font_add_google("Ubuntu Condensed" , "ubuntu")
+
+# Pebble: "#333333"
+# Slate: "#3E3D53"
+# Pewter: "#696880"
+# Fossil: "#787276"
+background <- "#696880"
+
+subtitle <- 
+"New research by NBER affiliates, circulated for discussion and comment. The NBER distributes more than 1,200 working papers each year.\nThese papers have not been peer reviewed. Papers issued more than 18 months ago are open access. More recent papers are available without\ncharge. This graphic clearly shows the trends towards Finance, Marcoeconomics and Microeconomics throughout the decades of publication."
+
+nber_alluvial <-
+nber %>%
+drop_na(program_category) %>%
+mutate(year = if_else(year %in% c(1975:1979), 1970, year)) %>% 
+select(year , program_category , program_desc) %>%
+count( year , program_category , program_desc) %>%
+  ggplot(aes(y = n, axis1 = year , axis2 = program_category , axis3 = program_desc)) +
+    geom_flow(aes(fill = year), width = .000001, curve_type = "quintic" , show.legend = FALSE, alpha = 0.8) +
+    geom_stratum(width = .03 , color = "#333333", fill = "white", size = 0.5) +
+    geom_text(stat = "stratum", aes(label = after_stat(stratum)), size = 7 , hjust = 0 , nudge_x = 0.015, color = "white", family = "ubuntu") +
+  coord_cartesian(clip = "off") +
+  scale_fill_viridis_b(option = "mako") +
+  theme_void() +
+  theme(plot.margin = margin(2,11,-4,-1,unit = "cm"),
+        plot.background = element_rect(fill =  background, color =  background),
+        panel.background = element_rect(fill = background, color =  background))
+
+```
+
+#### Annotations
+```{r}
+library(cowplot)
+
+nber_panel <- 
+ggdraw(nber_alluvial) +
+draw_text("The National Bureau of Economic Research", x = 0.015, y = 0.985,
+          size = 36 , family = "oswald", color = "white" , hjust = 0) +
+draw_text(subtitle , x = 0.015, y = 0.96,
+          size = 20 , family = "ubuntu" , color = "white" , hjust = 0) +
+draw_text("s" , x = 0.048, y = 0.9325,
+          size = 16 , family = "ubuntu" , color = "white" , hjust = 0)
+
+```
+
+
+#### Saving
+```{r}
+
+ggsave(here::here("Week 40 : NBER Papers/panel_alluvial_fossil.png"), dpi = 400 , height = 41, width = 15)
+
+```
+
