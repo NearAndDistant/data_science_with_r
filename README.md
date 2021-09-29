@@ -1,5 +1,11 @@
 # Data Science with R: Projects
 
+## NBER Papers
+
+New research by NBER affiliates, circulated for discussion and comment. The NBER distributes more than 1,200 working papers each year. These papers have not been peer reviewed. Papers issued more than 18 months ago are open access. More recent papers are available without charge. This graphic clearly shows the trends towards Finance, Marcoeconomics and Microeconomics throughout the decades of publication.[Code](https://github.com/NearAndDistant/data_science_with_r/blob/main/Tidy_Tuesday/2021/Week%2040%20:%20NBER%20Papers/%5BCode%5D.Rmd)
+
+![panel_alluvial_pewter](https://user-images.githubusercontent.com/79040885/135298868-d5539954-f5db-427f-90d0-ba3bdcec4d7b.png)
+
 ## Emmy Awards
 The two events with the most media coverage are the Primetime Emmy Awards and the Daytime Emmy Awards,\nwhich recognize outstanding work in American primetime and daytime entertainment programming, respectively.
 
