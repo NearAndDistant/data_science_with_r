@@ -1,5 +1,9 @@
 # Data Science with R: Projects
 
+This graphic shows the National Centre for Education Statistics' (NCES) data of Bachlor level graduations of white and black students in the United States between 1940 and 2016. Black graduate rates have always lagged behind white rates quite significantly, never reaching parity. This inequality is the result of intergenerational capital (both financial and social) as well as continued social divides causing an unequal network of opportunities. This continued division, unless intervened within, will continue to prevail within the US.[Code](https://github.com/NearAndDistant/data_science_with_r/blob/main/Tidy_Tuesday/2021/Week%2006%20:%20HBCU%20Foundation/%5BCode%5D.Rmd)
+
+![hbcu_text_chart](https://user-images.githubusercontent.com/79040885/135725392-d33b688f-141c-4432-8e8e-1f48176d7fb7.png)
+
 ## NBER Papers
 
 New research by NBER affiliates, circulated for discussion and comment. The NBER distributes more than 1,200 working papers each year. These papers have not been peer reviewed. Papers issued more than 18 months ago are open access. More recent papers are available without charge. This graphic clearly shows the trends towards Finance, Marcoeconomics and Microeconomics throughout the decades of publication.[Code](https://github.com/NearAndDistant/data_science_with_r/blob/main/Tidy_Tuesday/2021/Week%2040%20:%20NBER%20Papers/%5BCode%5D.Rmd)
