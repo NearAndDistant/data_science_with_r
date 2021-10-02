@@ -83,7 +83,9 @@ draw_text("The National Bureau of Economic Research", x = 0.015, y = 0.985,
 draw_text(subtitle , x = 0.015, y = 0.96,
           size = 20 , family = "ubuntu" , color = "white" , hjust = 0) +
 draw_text("s" , x = 0.048, y = 0.9325,
-          size = 16 , family = "ubuntu" , color = "white" , hjust = 0)
+          size = 16 , family = "ubuntu" , color = "white" , hjust = 0) +
+draw_text("Data: {nberwp} package | Graphic: @NearAndDistant" , x = 0.54, y = 0.984,
+          size = 20 , family = "ubuntu" , color = "white" , hjust = 0)
 
 ```
 
@@ -91,7 +93,7 @@ draw_text("s" , x = 0.048, y = 0.9325,
 #### Saving
 ```{r}
 
-ggsave(here::here("Week 40 : NBER Papers/panel_alluvial_fossil.png"), dpi = 400 , height = 41, width = 15)
+ggsave(here::here("Week 40 : NBER Papers/panel_alluvial_pewter.png"), dpi = 400 , height = 41, width = 15)
 
 ```
 
