@@ -1,5 +1,7 @@
 # Data Science with R: Projects
 
+## National Centre for Education Statistics (NCES)
+
 This graphic shows the National Centre for Education Statistics' (NCES) data of Bachlor level graduations of white and black students in the United States between 1940 and 2016. Black graduate rates have always lagged behind white rates quite significantly, never reaching parity. This inequality is the result of intergenerational capital (both financial and social) as well as continued social divides causing an unequal network of opportunities. This continued division, unless intervened within, will continue to prevail within the US.[Code](https://github.com/NearAndDistant/data_science_with_r/blob/main/Tidy_Tuesday/2021/Week%2006%20:%20HBCU%20Foundation/%5BCode%5D.Rmd)
 
 ![hbcu_text_chart](https://user-images.githubusercontent.com/79040885/135725392-d33b688f-141c-4432-8e8e-1f48176d7fb7.png)
