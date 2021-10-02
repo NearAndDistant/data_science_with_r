@@ -196,10 +196,10 @@ anti_join(hbcu_mask , by = c("year" , "n_year")) %>%
 ggplot(aes(x = x + (n_year/5), y = -y)) +
   geom_text(aes(label = plot_year), 
             hjust = 0, size = 10, family = font,
-            show.legend = FALSE, color = "grey80", alpha = 0.3) +
+            show.legend = FALSE, color = "grey80", alpha = 0.1) +
   geom_text(data = hbcu_mask_long , 
             aes(label = plot_year, color = ethnicity), 
-            hjust = 0 , size = 10, family = font, show.legend = FALSE) +
+            hjust = 0 , size = 12, family = font, show.legend = FALSE) +
   labs(color = NULL) +
   scale_y_continuous(minor_breaks = NULL) +
   scale_color_manual(values = c(Black = "black" , White = "white")) +
@@ -224,7 +224,7 @@ ggplot(aes(x = x + (n_year/5), y = -y)) +
             show.legend = FALSE, color = "grey80", alpha = 0.6) +
   geom_text(data = hbcu_mask_long %>% filter(year == 2001) , 
             aes(label = plot_year, color = ethnicity), 
-            hjust = 0 , size = 10, family = font, show.legend = FALSE) +
+            hjust = 0 , size = 12, family = font, show.legend = FALSE) +
   labs(color = NULL) +
   scale_y_continuous(minor_breaks = NULL) +
   scale_color_manual(values = c(Black = "black" , White = "white")) +
@@ -240,32 +240,35 @@ ggplot(aes(x = x + (n_year/5), y = -y)) +
 library(cowplot)
 
 text <- 
-"This graphic shows the National Centre for Education Statistics' (NCES) data of Bachlor\nlevel graduations of white and black students in the United States between 1940 and 2016.\nBlack graduate rates have always lagged behind white rates quite significantly, never reaching parity.\n\nThis inequality is the result of intergenerational capital (both financial and social) as well\nas continued social divides causing an unequal network of opportunities. This continued division,\nunless intervened within, will continue to prevail within the US."
+"This graphic shows the National Centre for Education Statistics' (NCES) data of Bachlor\nlevel graduations of white and black students (over 25) in the United States between 1940 and 2016.\nBlack graduate rates have always lagged behind white rates quite significantly, never reaching parity.\n\nThis inequality is the result of intergenerational capital (both financial and social) as well\nas continued social divides causing an unequal network of opportunities. This continued division,\nunless intervened within, will continue to prevail within the US."
 
 # finalise panel with layered plotting or annotation
+#panel_blm <-
 ggdraw() +
   draw_plot(plot_hbcu_long) +
-  annotate(geom = "rect" , xmin = 0.79 , xmax = 0.94 , ymin = 0.82 , ymax = 0.92, fill = colorspace::darken(background, 0.25)) +
-  draw_plot(plot_legend , height = 0.02 , width = 0.1315, x = 0.795 , y = 0.86) +
+  annotate(geom = "rect" , xmin = 0.81 , xmax = 0.96 , ymin = 0.82 , ymax = 0.92, fill = colorspace::darken(background, 0.25)) +
+  draw_plot(plot_legend , height = 0.02 , width = 0.1315, x = 0.815 , y = 0.86) +
   draw_image("https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Fist.svg/842px-Fist.svg.png",
              height = 0.325 , width = 0.25 , x = 0.54 , y = 0.645) +
   draw_text("Educational Inequality\nin the United States", size = 38, x = 0.22 , 0.895 , hjust = 0 , family = "blm") +
   draw_text(text ,  size = 12, x = 0.22 , y = 0.73 , hjust = 0 , family = "patrick") +
   draw_text("Data:\n\nGraphic: " ,  x = 0.71 , y = 0.70 , hjust = 0 , family = "blm" , size = 14) +
   draw_text("NCES via HBCU\n\n@NearAndDistant" ,  x = 0.71 , y = 0.68 , hjust = 0 , family = "patrick" , size = 13) +
-  annotate(geom = "curve" , x = 0.88, y = 0.95, xend = 0.8475, yend = 0.90, curvature = 0.5 , arrow = arrow(length = unit(0.01, "npc"))) +
-  annotate(geom = "curve" , x = 0.78, y = 0.95, xend = 0.8075, yend = 0.90, curvature = -0.5 , arrow = arrow(length = unit(0.01, "npc"))) +
-  draw_text("Black                              White" , x = 0.75, y = 0.95 , hjust = 0 , family = "blm") +
-  annotate(geom = "segment" , x = 0.79 , xend = 0.94 , y = 0.80 , yend = 0.80 , arrow = arrow(length = unit(0.01, "npc"), ends = "both")) +
-  draw_text("          |         |          |      ", x = 0.79 , y = 0.802, hjust = 0) +
-  draw_text("10%     20%     30%      40%     50%", x = 0.79 , y = 0.78, hjust = 0, family = "patrick") +
-  draw_text("Percentage of Graduates", x = 0.795 , y = 0.755, hjust = 0, family = "blm") 
+  annotate(geom = "curve" , x = 0.90, y = 0.95, xend = 0.8675, yend = 0.90, curvature = 0.5 , arrow = arrow(length = unit(0.01, "npc"))) +
+  annotate(geom = "curve" , x = 0.80, y = 0.95, xend = 0.8275, yend = 0.90, curvature = -0.5 , arrow = arrow(length = unit(0.01, "npc"))) +
+  draw_text("Black                              White" , x = 0.77, y = 0.95 , hjust = 0 , family = "blm") +
+  annotate(geom = "segment" , x = 0.81 , xend = 0.96 , y = 0.80 , yend = 0.80 , arrow = arrow(length = unit(0.01, "npc"), ends = "both")) +
+  draw_text("          |         |          |      ", x = 0.81 , y = 0.802, hjust = 0) +
+  draw_text("10%     20%     30%      40%     50%", x = 0.81 , y = 0.78, hjust = 0, family = "patrick") +
+  draw_text("Percentage of Graduates", x = 0.885 , y = 0.755, hjust = 0.5, family = "blm") +
+  draw_text("We represent the % of black and white graduate \nstudents in each particular year by using each\nfigure as % bins (shown above) and highlighting\nwhich each race fell into in each respective year", 
+            x = 0.80 , y = 0.695, hjust = 0 , family = "patrick", size = 11)
   
 ```
 
 #### Saving
 ```{r}
 
-ggsave(plot = hbcu_sankey , here::here("Week 06 : HBCU Foundation/hbcu_sankey.png"), dpi = 360, height = 40, width = 18)
+ggsave(plot = panel_blm , here::here("Week 06 : HBCU Foundation/hbcu_text_chart.png"), dpi = 360, height = 10, width = 16)
 
 ```
