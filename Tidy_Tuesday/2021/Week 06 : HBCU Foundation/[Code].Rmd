@@ -243,7 +243,7 @@ text <-
 "This graphic shows the National Centre for Education Statistics' (NCES) data of Bachlor\nlevel graduations of white and black students (over 25) in the United States between 1940 and 2016.\nBlack graduate rates have always lagged behind white rates quite significantly, never reaching parity.\n\nThis inequality is the result of intergenerational capital (both financial and social) as well\nas continued social divides causing an unequal network of opportunities. This continued division,\nunless intervened within, will continue to prevail within the US."
 
 # finalise panel with layered plotting or annotation
-#panel_blm <-
+panel_blm <-
 ggdraw() +
   draw_plot(plot_hbcu_long) +
   annotate(geom = "rect" , xmin = 0.81 , xmax = 0.96 , ymin = 0.82 , ymax = 0.92, fill = colorspace::darken(background, 0.25)) +
