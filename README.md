@@ -1,5 +1,18 @@
 # Data Science with R: Projects
 
+## Registered Nurses (BLS)
+
+"The Areas of the blue and red outline are measured from the centreas the common vertex.
+The blue wedges measured from the centre of the circle represent area for area the median salary for nurses in each year (fig 1) and each state in 2021 (fig 2); & the red outline measures the mean.
+We can see that across years there has been a close relationship between the median and mean for salaries. When we look at a state level we can see the sometimes large discrepancies in salaries although the close relationship between median and mean still hold.
+Hawaii is an exception to the general rule where median salary is larger than mean, we could expect that some individuals in Hawaii earn a lot less than other, dragging the central tendancy of the mean downwards."[Code](https://github.com/NearAndDistant/data_science_with_r/blob/main/Tidy_Tuesday/2021/Week%2041%20:%20Registered%20Nurses/%5BCode%5D.Rmd)
+
+### Florence Nightingale (Original)
+![FBFrHeNX0AIUjmc](https://user-images.githubusercontent.com/79040885/137390642-abd4fa99-79f6-405d-828b-bf9e51d4c72e.jpeg)
+
+### Reproduction with registered nurse data (BLS)
+![nightingale](https://user-images.githubusercontent.com/79040885/137390646-6e99638c-d853-4ee3-8f05-f68e66a095df.png)
+
 ## National Centre for Education Statistics (NCES)
 
 This graphic shows the National Centre for Education Statistics' (NCES) data of Bachlor level graduations of white and black students in the United States between 1940 and 2016. Black graduate rates have always lagged behind white rates quite significantly, never reaching parity. This inequality is the result of intergenerational capital (both financial and social) as well as continued social divides causing an unequal network of opportunities. This continued division, unless intervened within, will continue to prevail within the US.[Code](https://github.com/NearAndDistant/data_science_with_r/blob/main/Tidy_Tuesday/2021/Week%2006%20:%20HBCU%20Foundation/%5BCode%5D.Rmd)
