@@ -40,13 +40,9 @@ head(nurses)
 nurses_cln <-
   nurses %>%
   janitor::clean_names() %>%
-  filter(year == 2020) %>%
   filter(state != "Puerto Rico") %>%
   mutate(pc_nurses = total_employed_rn,
-         state = str_to_upper(state)) %>%
-  select(state , annual_salary_median, annual_salary_avg) %>%
-  pivot_longer(cols = -state, names_to = "metric") %>%
-  arrange(state, metric) 
+         state = str_to_upper(state))
 
 
 ```
@@ -66,25 +62,118 @@ nurses_cln %>%
 library(showtext); showtext_auto()
 font_add_google("Arya", "arya")
 font_add_google("Spirax", "spirax")
+font_add_google("Uchen", "uchen")
+font_add_google("Homemade Apple", "apple")
+font_add_google("Charm", "charm")
 
 background <- "#fff9fd"
 palette    <- c("#b2c1c2" , "#e4b2ad")
 
 ```
 
-#### Plotting
+#### Plotting Fig 1
+
+```{r}
+
+nurses_fig1 <- 
+nurses_cln %>%
+  filter(year != 2021) %>%
+  select(state , year , annual_salary_median, annual_salary_avg) %>%
+  group_by(year) %>%
+  summarise(annual_salary_avg    = mean(annual_salary_avg, na.rm = TRUE),
+            annual_salary_median = median(annual_salary_median, na.rm = TRUE)) %>%
+  pivot_longer(cols = -year, names_to = "metric")
+
+```
+
+```{r}
+
+# Add 2 rows with 0 at the beginning of the data frame
+fig1_med <- 
+  nurses_fig1 %>% 
+  filter(metric == "annual_salary_median") %>%
+  add_row(value = c(0,0,0,0,0,0,0), year = c(2021:2027))
+
+fig1_avg <- 
+  nurses_fig1 %>% 
+  filter(metric == "annual_salary_avg") %>%
+  add_row(value = c(0,0,0,0,0,0,0), year = c(2021:2027)) %>%
+  mutate(id    = row_number(),
+         angle = 360 - 360 * (id - 0.5) / max(id),
+         hjust = ifelse(angle < -90, 1, 0),
+         angle = ifelse(angle < -90, angle +180, angle),
+         color = ifelse(year %in% c(2021:2027), "1", "0"),
+         size  = ifelse(year %in% c(2021:2027), "1", "0")) %>%
+  select(-metric)
+
+```
+
+```{r, fig.align="center", fig.width=6, fig.height=6, fig.cap="Figure: Here is a really important caption."}
+
+fig1_avg_med <- 
+fig1_avg %>%
+  ggplot(aes(x = year, y = value)) +
+  geom_bar(aes(fill = "#b2c1c2"), alpha = 0.80 , stat = "identity", show.legend = FALSE, data = fig1_med) +
+  geom_bar(aes(fill = "#e4b2ad"), alpha = 0, color = "#e4b2ad" , stat = "identity", show.legend = FALSE) +
+  ylim(-25000, max(fig1_avg$value+20000)) +
+  geom_text(aes(label = year, y = value + 4000, angle = angle, color = color, size = size), 
+            family = "arya", fontface = "bold"  , show.legend = FALSE) + 
+  scale_fill_manual(values = palette) +
+  scale_color_manual(values = c("#000000", background)) +
+  scale_size_manual(values  = c(4 , 0)) +
+  coord_polar(start = 0, clip = "off") +
+  theme_void() +
+  theme(plot.background = element_rect(color = background , fill = background),
+        panel.background = element_rect(color = background , fill = background),
+        plot.margin = margin(0,0,0,0, unit = "cm"))
+
+```
+
+```{r}
+# legend format fig 1
+
+start1 <- 2021
+end1   <- max(fig1_avg$year)
+
+grid_fig1 <- 
+  tibble(x      = c(start1, start1, start1),
+         xend   = c(end1  , end1  , end1  ),
+         y      = c(25000 , 50000 , 75000 ),
+         labels = c("$25,000","$50,000","$75,000"))
+
+plot_fig1 <- 
+  fig1_avg_med +
+  geom_segment(data = grid_fig1, col = "grey50", 
+               aes(x = x, xend = xend, y = y, yend = y)) +
+  geom_text(data = grid_fig1, aes(x = max(fig1_avg$year), y = y + 5000, label = labels),
+            size = 3, col = "grey50", fontface = "bold" , hjust = 1, angle = 0, family = "arya")
+
+```
+
+#### Plotting Fig 2
+
+```{r}
+
+nurses_fig2 <- 
+nurses_cln %>%
+  filter(year == 2020) %>%
+  select(state , annual_salary_median, annual_salary_avg) %>%
+  pivot_longer(cols = -state, names_to = "metric") %>%
+  arrange(state, metric) 
+
+```
 
 ```{r}
 # formatting
 
 # Add 2 rows with 0 at the beginning of the data frame
 nurses_med <- 
-  nurses_cln %>% 
+  nurses_fig2 %>% 
   filter(metric == "annual_salary_median") %>%
   add_row(value = c(0,0,0,0), state = c("za", "zb", "zc", "zd"), .after = 53)
 
 nurses_avg <- 
-  nurses_cln %>% 
+  nurses_fig2 %>% 
   filter(metric == "annual_salary_avg") %>%
   add_row(value = c(0,0,0,0), state = c("za", "zb", "zc", "zd"), .after = 53) %>%
   mutate(id    = row_number(),
@@ -106,7 +195,7 @@ nurses_avg %>%
   geom_bar(aes(fill = "#e4b2ad"), alpha = 0, color = "#e4b2ad" , stat = "identity", show.legend = FALSE) +
   ylim(-25000, max(nurses_avg$value+20000)) +
   geom_text(aes(label = state, y = value + 8000 , angle = angle, hjust = hjust, color = color, size = size), 
-            family = "arya" , show.legend = FALSE) + 
+            family = "arya" , fontface = "bold" , show.legend = FALSE) + 
   scale_fill_manual(values = palette) +
   scale_color_manual(values = c("#000000", background)) +
   scale_size_manual(values  = c(3 , 0)) +
@@ -130,34 +219,52 @@ grid_manual <-
          y = c(50000,90000,130000),
          labels = c("$40,000","$80,000","$120,000"))
 
-plot_nurses_avg_med <- 
+plot_fig2 <- 
   nurses_avg_med +
   geom_segment(data = grid_manual,
                aes(x = x, xend = xend, y = y, yend = y),
                col = "grey50") +
   geom_text(data = grid_manual, aes(x = 54, y = y + 5000, label = labels),
-            size = 2.5, col = "grey50", hjust = 0, angle = 15, family = "arya")
+            size = 2.5, col = "grey50", hjust = 0, angle = 15, family = "arya", fontface = "bold")
 
 ```
 
 #### Panel
+
+```{r}
+
+text <-"The Areas of the blue and red outline are measured from the centreas the\n   common vertex.\nThe blue wedges measured from the centre of the circle represent area for area the\n   median salary for nurses in each year (fig 1)\n   and each state in 2021 (fig 2); & the red outline measures the mean.\nWe can see that across years there has been a close relationship between\n   the median and mean for salaries. When we look at a state level we can see the\n   sometimes large discrepancies in salaries although the close relationship between\n   median and mean still hold.\nHawaii is an exception to the general rule where median salary is larger than\n    mean, we could expect that some individuals in Hawaii earn a lot less than other,\n    dragging the central tendancy of the mean downwards."
+
+```
+
 ```{r}
 library(cowplot)
 
 # finalise panel with layered plotting or annotation
-ggdraw(xlim = c(0.2, 0.8), ylim = c(0.05,0.975)) +
-  draw_plot(plot_nurses_avg_med , x = 0.020 , y = 0.325, height = 0.6 , width = 0.6) +
+ggdraw(xlim = c(0.23, 0.8), ylim = c(0.10,0.975)) +
+  # plot 1
+  draw_plot(plot_fig1 , x = 0.15 , y = 0.01, height = 1 , width = 1) +
+  # plot 2
+  draw_plot(plot_fig2 , x = 0.07 , y = 0.40, height = 0.5 , width = 0.5) +
   # main title
-  draw_text("DIAGRAM OF THE SALARIES OF NURSES", x = 0.5 , y = 0.94, size = 22, family = "spirax") +
-  draw_text("IN EACH STATE IN THE US", x = 0.5 , y = 0.90, size = 18, family = "arya") +
+  draw_text("DIAGRAM            SALARIES       NURSES", x = 0.5 , y = 0.94, size = 22, family = "spirax") +
+  draw_text("      OF THE                                                OF", x = 0.5 , y = 0.935,size = 12, family = "spirax") +
+  draw_text("IN THE UNITED STATES", x = 0.5 , y = 0.90, size = 18, family = "arya") +
   draw_line(x = c(0.46,0.54) , y = c(0.873,0.873)) +
   draw_line(x = c(0.45,0.55) , y = c(0.87,0.87)) +
   # fig 1
-  draw_text("1.\nJANUARY 1998 TO JANUARY 2020", x = 0.71 , y = 0.91, size = 12, family = "arya") +
-  draw_line(x = c(0.68,0.74) , y = c(0.8875,0.8875)) +
+  draw_text("1.\nJANUARY 1998 TO JANUARY 2020", x = 0.68 , y = 0.91, size = 10, family = "uchen") +
+  draw_line(x = c(0.65,0.71) , y = c(0.8875,0.8875)) +
   # fig 2
-  draw_text("2.\nJANUARY 2020 TO JANUARY 2021", x = 0.32 , y = 0.91, size = 12, family = "arya") +
+  draw_text("2.\nJANUARY 2020 TO JANUARY 2021", x = 0.32 , y = 0.91, size = 10, family = "uchen") +
   draw_line(x = c(0.29,0.35) , y = c(0.8875,0.8875)) +
+  # connection
+  annotate("segment", x = 0.5075, y = 0.5425, xend = 0.38, yend = 0.42, linetype = "dashed") +
+  annotate("segment", x = 0.38, y = 0.42, xend = 0.32, yend = 0.46, linetype = "dashed") +
+  # text
+  draw_text(text , x = 0.25, y = 0.26 , hjust = 0, size = 13 , family = "charm") +
+  draw_text("Data: U.S. BUREAU OF LABOR STATISTICS | Graphic: @NearAndDistant",
+            x = 0.65 , y = 0.125 , size = 10 , family = "arya") +
   theme(plot.background = element_rect(color = background , fill = background),
         panel.background = element_rect(color = background , fill = background))
 
@@ -166,9 +273,7 @@ ggdraw(xlim = c(0.2, 0.8), ylim = c(0.05,0.975)) +
 #### Saving
 ```{r}
 
-gtsave(here::here(".png"))
-
-ggsave(here::here(".png"), dpi = 360, height = 10, width = 15)
+ggsave(here::here("Week 41 : Registered Nurses/nightingale.png"), dpi = 360, height = 10, width = 15)
 
 ```
 
