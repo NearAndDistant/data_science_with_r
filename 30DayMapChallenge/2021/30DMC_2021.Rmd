@@ -6,16 +6,107 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
+
 knitr::opts_chunk$set(echo = TRUE)
+
+# Packages
+library(tidyverse)
+library(osmdata)
+
+dir.create(here::here("graphics"))
+
 ```
 
 # 30 Day Map Challenge
 
-# Day 01 : Points
+# Day 01 : Points (London Postboxes)
+```{r}
+
+# boundary box
+coords <- matrix(c(-0.6, 0.35, 51.22, 51.75), # org: -0.8, 0.5, 51.2, 51.75
+                 byrow = TRUE, nrow = 2, ncol = 2, 
+                 dimnames = list(c('x','y'),c('min','max'))) 
+
+location <- coords %>% opq()
+
+# postbox data
+postbox <- 
+location %>%
+   add_osm_feature(key = "amenity", value = "post_box") %>%
+   osmdata_sf()
+
+highway <- 
+  location %>%
+  add_osm_feature(key = "highway", 
+                  value = c("motorway", "primary", "motorway_link", "primary_link")) %>%
+  osmdata_sf()
+
+streets <-
+  location %>%
+  add_osm_feature(key = "highway", value = c("residential", "living_street")) %>%
+  osmdata_sf()
+
+```
+
+```{r map , echo = FALSE , fig.align = 'center' , fig.dim = '125%' , message = FALSE}
+library(sf)
+
+# create temp files
+temp_map <- tempfile(fileext = ".zip")
+unzip_temp_map <- tempfile()
+
+# download zip file into tempfile using hyperlink
+download.file(url = "https://s3-eu-west-1.amazonaws.com/londondatastore-upload/statistical-gis-boundaries-london.zip", destfile = temp_map)
+
+# unzip the tempfile to extract the shp file we need
+unzip_temp_map <- unzip(temp_map)
+
+# read shp file using read_sf
+lnd_shp <- 
+  read_sf('statistical-gis-boundaries-london/ESRI/London_Borough_Excluding_MHW.shp') %>%
+    janitor::clean_names() %>%
+    select(name , code_ons = gss_code , geometry)
+
+```
 
 ```{r}
 
+library(showtext); showtext_auto()
+font_add_google("Righteous", "righteous")
+font_add_google("Saira" , "saira")
 
+text <- str_wrap('The advent of the British wayside letter box can be traced to Sir Rowland Hill, Secretary of the Post Office, and his Surveyor for the Western District, and noted novelist, Anthony Trollope. Hill sent Trollope to the Channel Islands to ascertain what could be done about the problem of collecting the mail on a pair of islands. The problems identified in the Channel Islands were caused by the irregular sailing times of the Royal Mail packet boats serving the islands due to weather and tides. Trollope subsequently arrived in Jersey in the early Spring of 1852 and proceeded to survey both islands. His recommendation back to Hill was to employ a device he may have seen in use in Paris: a "letter-receiving pillar".', width = 100)
+
+# lnd map
+plot_lnd_pb <-
+ggplot() +
+  geom_sf(data = lnd_shp, fill = "white", color = "#41424C", alpha = 0.8) +
+    geom_sf(data = streets$osm_lines, inherit.aes = FALSE,
+            color = "#ADADC9", size = .6, alpha = .7) +
+    geom_sf(data = highway$osm_lines, inherit.aes = FALSE,
+            color = "#787276", size = .6, alpha = .7) +
+  geom_sf(data = postbox$osm_points, 
+          color = "#df2a2a", size = 0.1, alpha = 0.8) +
+  theme_void() +
+  theme(plot.background  = element_rect(fill = "#41424C", color = "#41424C"),
+        panel.background = element_rect(fill = "#41424C", color = "#41424C"),
+        plot.margin = margin(-1,0,3,0,unit = "cm"))
+
+library(cowplot)
+
+panel_lnd_pb <-
+ggdraw() +
+  draw_plot(plot_lnd_pb) +
+  draw_text("The London Postbox", x = 0.08 , y = 0.95 , hjust = 0, color = "white", size = 36, family = "righteous") +
+  draw_text("Data: Open Street Map | Graphic: @NearAndDistant", x = 0.08 , y = 0.915 , hjust = 0, color = "white", size = 10, family = "righteous") +
+  draw_text(text , x = 0.08 , y = 0.1, size = 12, color = "white", hjust = 0, family = "saira")
+
+```
+
+#### Saving
+```{r}
+
+ggsave(plot = panel_lnd_pb, filename = here::here("graphics/D1_London_Postbox.png"), dpi = 360, height = 10, width = 9)
 
 ```
 
@@ -136,6 +227,25 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 
+# boundary box
+coords <- matrix(c(-0.1,-0.07,51.5,51.52), 
+                 byrow = TRUE, nrow = 2, ncol = 2, 
+                 dimnames = list(c('x','y'),c('min','max'))) 
+
+location <- coords %>% opq()
+
+# get map
+water <- 
+location %>%
+   add_osm_feature(key = "natural", 
+                   value = c("water")) %>%
+   osmdata_sf()
+
+# plot
+ggplot() + 
+  geom_sf(data = water$osm_multipolygons, fill = 'light blue') + 
+  theme_minimal()
+
 ```
 
 
@@ -223,3 +333,25 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 
+#### Useful Snippets
+
+```{r}
+library(ggmap)
+
+# boundary box
+bbox <- c(-0.6, 51.22, 0.35, 51.75)
+
+# london map
+lnd_map         <- get_stamenmap(bbox, maptype = "terrain", zoom = 11)
+lnd_map_ton     <- get_stamenmap(bbox, maptype = "toner-lines", zoom = 11)
+lnd_map_terrain <- get_stamenmap(bbox, maptype = "terrain-lines", zoom = 11)
+lnd_map_hybrid  <- get_stamenmap(bbox, maptype = "toner-hybrid", zoom = 11)
+
+lnd_map_v2 <- get_stamenmap(bbox , zoom = 8 , maptype = "toner-lines")
+lnd_map_watercolor <- get_stamenmap(bbox , zoom = 8 , maptype = "watercolor")
+lnd_map_hybrid <- get_stamenmap(bbox , zoom = 8 , maptype = "toner-hybrid")
+
+# plot map
+ggmap(lnd_map_ton, extent = "device")
+
+```
