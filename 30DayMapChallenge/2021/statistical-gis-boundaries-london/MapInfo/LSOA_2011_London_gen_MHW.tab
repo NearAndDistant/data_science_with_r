@@ -1,0 +1,21 @@
+!table
+!version 300
+!charset WindowsLatin1
+
+Definition Table
+  Type NATIVE Charset "WindowsLatin1"
+  Fields 14
+    LSOA11CD Char (9) ;
+    LSOA11NM Char (40) ;
+    MSOA11CD Char (9) ;
+    MSOA11NM Char (40) ;
+    LAD11CD Char (9) ;
+    LAD11NM Char (40) ;
+    RGN11CD Char (9) ;
+    RGN11NM Char (25) ;
+    UsualRes Integer ;
+    HholdRes Integer ;
+    ComEstRes Integer ;
+    PopDen Float ;
+    Hholds Integer ;
+    AvHholdSz Float ;

@@ -1,0 +1,225 @@
+---
+title: '#30DayMapChallenge'
+author: "NearAndDistant"
+date: "04/11/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# 30 Day Map Challenge
+
+# Day 01 : Points
+
+```{r}
+
+
+
+```
+
+
+# Day 02 : Lines
+
+```{r}
+
+```
+
+
+# Day 03 : Polygons
+
+```{r}
+
+```
+
+
+# Day 04 : Hexagons
+
+```{r}
+
+```
+
+
+# Day 05 : Open Street Map
+
+```{r}
+
+```
+
+
+# Day 06 : Red
+
+```{r}
+
+```
+
+
+# Day 07 : Green
+
+```{r}
+
+```
+
+
+# Day 08 : Blue
+
+```{r}
+
+```
+
+
+# Day 09 : Monochrome
+
+```{r}
+
+```
+
+
+# Day 10 : Raster
+
+```{r}
+
+```
+
+
+# Day 11 : 3D
+
+```{r}
+
+```
+
+
+# Day 12 : Population
+
+```{r}
+
+```
+
+
+# Day 13 : Natural Earth
+
+```{r}
+
+```
+
+
+# Day 14 : New Tool
+
+```{r}
+
+```
+
+
+# Day 15 : No Computer Map
+
+```{r}
+
+```
+
+
+# Day 16 : Urban / Rural
+
+```{r}
+
+```
+
+
+# Day 17 : Land
+
+```{r}
+
+```
+
+
+# Day 18 : Water
+
+```{r}
+
+```
+
+
+# Day 19 : Island
+
+```{r}
+
+```
+
+
+# Day 20 : Movement
+
+```{r}
+
+```
+
+
+# Day 21 : Elevation
+
+```{r}
+
+```
+
+
+# Day 22 : Boundaries
+
+```{r}
+
+```
+
+
+# Day 23 : GHSL
+
+```{r}
+
+```
+
+
+# Day 24 : Historical
+
+```{r}
+
+```
+
+
+# Day 25 : Interactive
+
+```{r}
+
+```
+
+
+# Day 26 : Chloropleth
+
+```{r}
+
+```
+
+
+# Day 27 : Heatmap
+
+```{r}
+
+```
+
+
+# Day 28 : Earth in not Flat
+
+```{r}
+
+```
+
+
+# Day 29 : NULL
+
+```{r}
+
+```
+
+
+# Day 30 : Metamapping
+
+```{r}
+
+```
+
+

@@ -1,0 +1,15 @@
+!table
+!version 300
+!charset WindowsLatin1
+
+Definition Table
+  Type NATIVE Charset "WindowsLatin1"
+  Fields 8
+    LSOA_CODE Char (9) Index 1 ;
+    LSOA_NAME Char (50) ;
+    MSOA_CODE Char (9) ;
+    MSOA_NAME Char (50) ;
+    STWARDCODE Char (6) ;
+    STWARDNAME Char (80) ;
+    LA_CODE Char (4) ;
+    LA_NAME Char (50) ;
