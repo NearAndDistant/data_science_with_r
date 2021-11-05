@@ -12,6 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 # Packages
 library(tidyverse)
 library(osmdata)
+library(rgdal)
 
 dir.create(here::here("graphics"))
 
@@ -90,7 +91,7 @@ ggplot() +
   theme_void() +
   theme(plot.background  = element_rect(fill = "#41424C", color = "#41424C"),
         panel.background = element_rect(fill = "#41424C", color = "#41424C"),
-        plot.margin = margin(-1,0,3,0,unit = "cm"))
+        plot.margin = margin(0,0,4,0,unit = "cm"))
 
 library(cowplot)
 
@@ -99,21 +100,105 @@ ggdraw() +
   draw_plot(plot_lnd_pb) +
   draw_text("The London Postbox", x = 0.08 , y = 0.95 , hjust = 0, color = "white", size = 36, family = "righteous") +
   draw_text("Data: Open Street Map | Graphic: @NearAndDistant", x = 0.08 , y = 0.915 , hjust = 0, color = "white", size = 10, family = "righteous") +
-  draw_text(text , x = 0.08 , y = 0.1, size = 12, color = "white", hjust = 0, family = "saira")
+  draw_text(text , x = 0.08 , y = 0.12, size = 12, color = "white", hjust = 0, family = "saira")
 
 ```
 
 #### Saving
 ```{r}
 
-ggsave(plot = panel_lnd_pb, filename = here::here("graphics/D1_London_Postbox.png"), dpi = 360, height = 10, width = 9)
+ggsave(plot = panel_lnd_pb, filename = here::here("graphics/D1_London_Postbox.png"), dpi = 360, height = 10.2, width = 8.75)
 
 ```
-
 
 # Day 02 : Lines
 
 ```{r}
+
+# boundary box
+d2_coords <- matrix(c(-1.794891,54.920434,-1.334839,55.069719),
+                 byrow = FALSE, nrow = 2, ncol = 2, 
+                 dimnames = list(c('x','y'),c('min','max'))) 
+
+d2_location <- d2_coords %>% opq()
+
+# boundary box & features
+d2_main_st <- 
+  d2_location %>%
+  add_osm_feature(key = "highway",
+                  value = c("motorway","trunk","primary","motorway_junction","trunk_link","primary_link","motorway_link")) %>%
+  osmdata_sf()
+
+d2_res <-
+  d2_location %>%
+  add_osm_feature(key = "highway", 
+                  value = c("residential", "living_street")) %>%
+  osmdata_sf()
+
+rail <- available_tags("railway")
+
+d2_rail <- 
+  d2_location %>%
+  add_osm_feature(key = "railway",
+                  value = rail) %>%
+  osmdata_sf()
+
+d2_bus <-
+  d2_location %>%
+  add_osm_feature(key = "route",
+                  value = c("bus")) %>%
+  osmdata_sf()
+
+d2_water <-
+  d2_location %>%
+  add_osm_feature(key = "natural",
+                  value = c("water", "coastline")) %>%
+  osmdata_sf()
+
+d2_river <-
+  d2_location %>%
+  add_osm_feature(key = "waterway",
+                  value = c("river", "riverbank", "stream")) %>%
+  osmdata_sf()
+
+bg <- "white"
+
+# plot
+ggplot() +
+    geom_sf(data = d2_water$osm_polygons, inherit.aes = FALSE,
+            fill = "#1F456E", size = .6, alpha = 0.8) +
+    geom_sf(data = d2_water$osm_multipolygons, inherit.aes = FALSE,
+            fill = "#1F456E", size = .6, alpha = 0.8) +
+    geom_sf(data = d2_main_st$osm_lines, inherit.aes = FALSE,
+            color = "black", size = .6, alpha = .8) +
+    geom_sf(data = d2_res$osm_lines, inherit.aes = FALSE,
+            color = "black", size = .6, alpha = .3) +
+    geom_sf(data = d2_rail$osm_lines, inherit.aes = FALSE,
+            color = "#BE5504", size = .6, alpha = 0.8) +
+    geom_sf(data = d2_bus$osm_lines, inherit.aes = FALSE,
+            color = "#637C98", size = .6, alpha = 0.8) +
+  coord_sf(xlim = c(-1.75, -1.18), ylim = c(54.88, 55.075)) +
+  theme_void() +
+  theme(plot.background  = element_rect(fill = bg, color = bg),
+        panel.background = element_rect(fill = bg, color = bg))
+
+```
+
+```{r}
+
+uk_lads <- 
+  readOGR( 
+  dsn = here::here("Local_Authority_Districts"), 
+  layer ="LAD_MAY_2021_UK_BFE_V2",
+  verbose=FALSE)
+
+uk_lads_tidy <- broom::tidy(uk_lads, region = "LAD21NM")
+
+ggplot() +
+  geom_polygon(data = uk_lads_tidy , 
+               aes(lat, lat, group = group), 
+               color = "#FFFFFF", size = 0.25) +
+  coord_fixed(1)
 
 ```
 
@@ -128,9 +213,108 @@ ggsave(plot = panel_lnd_pb, filename = here::here("graphics/D1_London_Postbox.pn
 # Day 04 : Hexagons
 
 ```{r}
+# data source, % benefits: https://dashboards.instantatlas.com/viewer/report?appid=b0aa98ed7113440581b4b3513ebb6e3d
+
+man_bens_raw <- readxl::read_xlsx(here::here("Area_Profile_Data_-_November_2021.xlsx"), sheet = "Benefits DWP (February 2021)")
+
+man_bens <-
+  man_bens_raw %>%
+  filter(Area == "Ward") %>%
+  select(ward = "Area Name" , pc_out_work_bens = "Percentage of residents claiming out of work benefits") %>%
+  mutate(pc_out_work_bens = pc_out_work_bens/100)
 
 ```
 
+```{r}
+# boundaries
+# boundary source: https://osdatahub.os.uk/downloads/open/BoundaryLine
+
+library(sf)
+library(geogrid)
+
+uk_bound <- 
+  readOGR( 
+  dsn = here::here("bdline_essh_gb/Data/GB"), 
+  layer = "district_borough_unitary_ward_region",
+  verbose=FALSE)
+
+# convert to sf
+uk_bound_sf <- st_as_sf(uk_bound)
+
+man_bound_cln <-
+  uk_bound_sf %>%
+  filter(FILE_NAME == "MANCHESTER_DISTRICT_(B)")
+
+```
+
+```{r}
+# calculate hexabin polygons
+
+par(mfrow = c(2, 3), mar = c(0, 0, 2, 0))
+
+# choose from output which is the most representative
+for (i in 1:6) {
+  new_cells <- calculate_grid(shape = man_bens_bound, grid_type = "hexagonal", seed = i)
+  plot(new_cells, main = paste("Seed", i, sep = " "))
+}
+
+man_sf_hex <- calculate_grid(shape = man_bens_bound, grid_type = "hexagonal", seed = 6) # seed = chosen 
+man_hex    <- assign_polygons(man_bens_bound, man_sf_hex)
+  
+```
+
+```{r}
+
+man_hex_bens <-
+  man_hex %>%
+  janitor::clean_names() %>%
+  mutate(name = str_remove(name, "Ward"),
+         name = trimws(name)) %>%
+  rename(ward = "name") %>%
+  select(ward , geometry, centroix, centroiy) %>%
+  full_join(man_bens , by = "ward")
+
+```
+
+```{r}
+# plot
+library(cowplot)
+library(showtext); showtext_auto()
+font_add_google("Graduate", "graduate")
+
+text1 <- str_wrap("The Manchester worker bee is one of the best-known symbols of Manchester and has been an emblem for the city for over 150 years. The bee denotes Mancunians' hard work ethic and the city being a hive of activity. It has also come to represent the sense of unity", 40)
+
+text2 <- str_wrap("This hexamap shows the percentage of Mancunians still recieving out of work benefits in 2021 according to the Department of Work and Pensions (DWP). Unemployment in the North of England has consistently being above The South and the Pandemic has only furthered these inequalities.", 40)
+
+plot_manchester <-
+ggdraw(
+man_hex_bens %>%
+  ggplot() +
+  geom_sf(aes(geometry = geometry, fill = pc_out_work_bens), color = "white") +
+  #ggrepel::geom_label_repel(aes(label = ward, x = centroix, y = centroiy), size = 3) +
+  rcartocolor::scale_fill_carto_c(palette = "PinkYl", labels = scales::percent_format(accuracy = 2)) +
+  labs(fill = "% of Ward Population Receiving\nOut of Work Benefits") +
+  theme_void() +
+  theme(legend.position = c(0.75,0.015),
+        legend.direction = "horizontal",
+        legend.title.align = c(1),
+        legend.title = element_text(family = "graduate"),
+        legend.key.width = unit(1.5, "cm"),
+        plot.margin = margin(0,-1,1,-4, unit = "cm"))) +
+draw_image("https://i.etsystatic.com/14593570/r/il/be970c/1293079357/il_570xN.1293079357_kvsv.jpg",
+           height = 0.15, width = 0.15, x = 0.35, y = 0.22) +
+draw_text("Manchester\nand the\nWorker Bee" , x = 0.565, y = 0.45, hjust = 0, family = "graduate", size = 28) +
+draw_text(text1, size = 8, x = 0.565, y = 0.30, hjust = 0, family = "graduate") +
+draw_text(text2, size = 8, x = 0.565, y = 0.155, hjust = 0, family = "graduate")
+         
+```
+
+#### Saving
+```{r}
+
+ggsave(plot = plot_manchester, filename = here::here("graphics/D3_Manchester_Bee.png"), dpi = 360, height = 10.2, width = 7)
+
+```
 
 # Day 05 : Open Street Map
 
@@ -170,6 +354,8 @@ ggsave(plot = panel_lnd_pb, filename = here::here("graphics/D1_London_Postbox.pn
 # Day 10 : Raster
 
 ```{r}
+
+https://osdatahub.os.uk/downloads/open/250kScaleColourRaster
 
 ```
 
@@ -223,12 +409,12 @@ ggsave(plot = panel_lnd_pb, filename = here::here("graphics/D1_London_Postbox.pn
 ```
 
 
-# Day 18 : Water
+# Day 18 : Water, Scotland Lochs
 
 ```{r}
 
 # boundary box
-coords <- matrix(c(-0.1,-0.07,51.5,51.52), 
+coords <- matrix(c(-1.311150,-1.800385,54.912541,55.074043), # -1.800385,54.912541,-1.311150,55.074043
                  byrow = TRUE, nrow = 2, ncol = 2, 
                  dimnames = list(c('x','y'),c('min','max'))) 
 
@@ -245,6 +431,28 @@ location %>%
 ggplot() + 
   geom_sf(data = water$osm_multipolygons, fill = 'light blue') + 
   theme_minimal()
+
+# data from: https://osdatahub.os.uk/downloads/open/OpenRivers
+# coord ref : st_transform(4326)
+
+# Lake District boundary box
+d2_coords <- matrix(c(-3.444214,54.281262,-2.672424,54.730964),
+                    byrow = FALSE, nrow = 2, ncol = 2, 
+                    dimnames = list(c('x','y'),c('min','max'))) 
+
+d2_shp_node <- 
+  readOGR( 
+  dsn= here::here("oprvrs_essh_gb/data"), 
+  layer="HydroNode",
+  verbose=FALSE)
+
+d2_shp_link <- 
+  readOGR( 
+  dsn= here::here("oprvrs_essh_gb/data"), 
+  layer="WatercourseLink",
+  verbose=FALSE) 
+
+plot(d2_shp_link, color = "#1F456E")
 
 ```
 
@@ -339,19 +547,16 @@ ggplot() +
 library(ggmap)
 
 # boundary box
-bbox <- c(-0.6, 51.22, 0.35, 51.75)
+bbox <- c(-1.800385,54.912541,-1.311150,55.074043)
 
 # london map
-lnd_map         <- get_stamenmap(bbox, maptype = "terrain", zoom = 11)
-lnd_map_ton     <- get_stamenmap(bbox, maptype = "toner-lines", zoom = 11)
-lnd_map_terrain <- get_stamenmap(bbox, maptype = "terrain-lines", zoom = 11)
-lnd_map_hybrid  <- get_stamenmap(bbox, maptype = "toner-hybrid", zoom = 11)
-
-lnd_map_v2 <- get_stamenmap(bbox , zoom = 8 , maptype = "toner-lines")
-lnd_map_watercolor <- get_stamenmap(bbox , zoom = 8 , maptype = "watercolor")
-lnd_map_hybrid <- get_stamenmap(bbox , zoom = 8 , maptype = "toner-hybrid")
+map            <- get_stamenmap(bbox, maptype = "terrain"      , zoom = 11)
+map_ton        <- get_stamenmap(bbox, maptype = "toner-lines"  , zoom = 11)
+map_terrain    <- get_stamenmap(bbox, maptype = "terrain-lines", zoom = 11)
+map_hybrid     <- get_stamenmap(bbox, maptype = "toner-hybrid" , zoom = 12)
+map_watercolor <- get_stamenmap(bbox, maptype = "watercolor"   , zoom = 11)
 
 # plot map
-ggmap(lnd_map_ton, extent = "device")
+ggmap(map_hybrid, extent = "device")
 
 ```
