@@ -254,12 +254,12 @@ par(mfrow = c(2, 3), mar = c(0, 0, 2, 0))
 
 # choose from output which is the most representative
 for (i in 1:6) {
-  new_cells <- calculate_grid(shape = man_bens_bound, grid_type = "hexagonal", seed = i)
+  new_cells <- calculate_grid(shape = man_bound_cln, grid_type = "hexagonal", seed = i)
   plot(new_cells, main = paste("Seed", i, sep = " "))
 }
 
-man_sf_hex <- calculate_grid(shape = man_bens_bound, grid_type = "hexagonal", seed = 6) # seed = chosen 
-man_hex    <- assign_polygons(man_bens_bound, man_sf_hex)
+man_sf_hex <- calculate_grid(shape = man_bound_cln, grid_type = "hexagonal", seed = 6) # seed = chosen 
+man_hex    <- assign_polygons(man_bound_cln, man_sf_hex)
   
 ```
 
@@ -312,7 +312,7 @@ draw_text(text2, size = 8, x = 0.565, y = 0.155, hjust = 0, family = "graduate")
 #### Saving
 ```{r}
 
-ggsave(plot = plot_manchester, filename = here::here("graphics/D3_Manchester_Bee.png"), dpi = 360, height = 10.2, width = 7)
+ggsave(plot = plot_manchester, filename = here::here("graphics/D3_Manchester_Bee.jpeg"), dpi = 360, height = 10.2, width = 7)
 
 ```
 
