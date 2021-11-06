@@ -8,7 +8,7 @@
 
 
 # Day 4: Hexagons
-![D3_Manchester_Bee](https://user-images.githubusercontent.com/79040885/140583848-bb9e5c2a-9727-4f92-acf4-ad9072c24d0a.jpeg)
+![D3_Manchester_Bee](https://user-images.githubusercontent.com/79040885/140584309-aa1de63d-10c3-4b8e-a78b-9d370eb1ab0d.jpeg)
 
 # Day 5: Open Street Map
 
