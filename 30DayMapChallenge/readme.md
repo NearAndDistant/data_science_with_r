@@ -11,4 +11,5 @@
 ![D3_Manchester_Bee](https://user-images.githubusercontent.com/79040885/140584309-aa1de63d-10c3-4b8e-a78b-9d370eb1ab0d.jpeg)
 
 # Day 5: Open Street Map
+![D5_Edinburgh](https://user-images.githubusercontent.com/79040885/140605181-22ca24b5-1539-438f-abca-3a260d3cca59.jpeg)
 
