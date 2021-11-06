@@ -443,8 +443,87 @@ ggsave(plot = panel_edinburgh, filename = here::here("graphics/D5_Edinburgh.jpeg
 
 ```{r}
 
+# political data
+labour_raw <-
+read_csv("https://researchbriefings.files.parliament.uk/documents/CBP-8749/HoC-GE2019-results-by-constituency-csv.csv")
+
+labour_cln <-
+labour_raw %>% 
+  mutate(labour_strength = if_else(first_party == "Lab", lab/valid_votes, NA_real_))
+
+# political boundaries
+# boundary source: https://osdatahub.os.uk/downloads/open/BoundaryLine
+
+library(sf)
+library(geogrid)
+
+uk_const <- 
+  readOGR( 
+  dsn = here::here("Westminster_Parliamentary_Constituencies_(December_2020)_UK_BFC"), 
+  layer = "PCON_DEC_2020_UK_BFC",
+  verbose=FALSE)
+
+# convert to sf
+uk_const_sf <- 
+  st_as_sf(uk_const) %>% 
+  janitor::clean_names()
+
+# joining for maps
+lab_const <-
+  labour_cln %>%
+  left_join(uk_const_sf, by = c("ons_id" = "pcon20cd")) %>%
+  select(ons_id , constituency_name, first_party, valid_votes, lab, labour_strength, lat, long, geometry)
+
 ```
 
+```{r}
+font_add_google("Graduate", "graduate")
+font_add_google("Prata", "prata")
+
+plot_lab_strength <-
+lab_const %>%
+  ggplot() +
+  geom_sf(aes(geometry = geometry, fill = labour_strength), color = "#b4b3b4") +
+  ggsci::scale_fill_material(palette = "red", labels = scales::percent_format(accuracy = 2), na.value = "#f1f1f1") +
+  labs(fill = "Labour Vote") +
+  theme_void() +
+  theme(legend.position = c(0.5,0.02),
+        legend.direction = "horizontal",
+        legend.title.align = c(0.5),
+        legend.title = element_text(family = "graduate"),
+        legend.key.width = unit(1.5, "cm"))
+
+# save image
+ggsave(plot = plot_lab_strength, filename = here::here("graphics/labour_strength.jpeg"), dpi = 360, height = 13.5, width = 12)
+
+```
+
+#### Saving
+```{r}
+
+d6_title <- str_wrap("UK Constituency Labour Seats in the 2019 General Election along with the % of the Labour Vote against vote cast", 30)
+
+lab_man  <- "It's Time\nfor Real\nChange"
+
+top_policies <-
+"1. Increase health budget by 4.3%\n2. Hold a second referendum on Brexit\n3. Raise minimum wage from £8.21 to £10\n4. Stop state pension age rises\n5. Introduce a National Care Service\n6. Bring forward net-zero target\n7. Nationalise key industries\n8. Scrap Universal Credit\n9. Abolish private schools' charitable status\n10. Free bus travel for under-25s\n11. Give EU nationals the right to remain\n12. Build 100,000 council homes a year"
+
+panel_uk_lab <-
+ggdraw(xlim = c(0.2,0.8)) +
+  draw_image(here::here("graphics/labour_strength.jpeg")) +
+  draw_text(d6_title, 
+            x = 0.26, y = 0.90, hjust = 0, family = "graduate") +
+  draw_text("Data: ONS | Graphic: @NearAndDistant", 
+            x = 0.26, y = 0.82, hjust = 0, size = 10, family = "prata") +
+  draw_text(lab_man, 
+            x = 0.75, y = 0.82, hjust = 1, family = "graduate", size = 22) +
+  draw_text(top_policies, 
+            x = 0.75, y = 0.65, hjust = 1, size = 10, family = "prata")
+
+# save image
+ggsave(plot = panel_uk_lab, filename = here::here("graphics/labour_real_change.jpeg"), dpi = 360, height = 12, width = 8.5)
+  
+```
 
 # Day 07 : Green
 
