@@ -14,6 +14,9 @@ library(tidyverse)
 library(osmdata)
 library(rgdal)
 
+library(cowplot)
+library(showtext); showtext_auto()
+
 dir.create(here::here("graphics"))
 
 ```
@@ -278,8 +281,6 @@ man_hex_bens <-
 
 ```{r}
 # plot
-library(cowplot)
-library(showtext); showtext_auto()
 font_add_google("Graduate", "graduate")
 
 text1 <- str_wrap("The Manchester worker bee is one of the best-known symbols of Manchester and has been an emblem for the city for over 150 years. The bee denotes Mancunians' hard work ethic and the city being a hive of activity. It has also come to represent the sense of unity", 40)
@@ -316,9 +317,124 @@ ggsave(plot = plot_manchester, filename = here::here("graphics/D3_Manchester_Bee
 
 ```
 
-# Day 05 : Open Street Map
+# Day 05 : Open Street Map (Greenspace: Edinburgh vs London )
 
 ```{r}
+# view features: www.openstreetmap.org
+# feature bible: https://wiki.openstreetmap.org/wiki/Map_features#Boundary_types
+# feature: https://rforjournalists.com/2020/12/15/how-to-access-open-street-map-in-r/
+
+# circular borders
+# https://taraskaduk.com/posts/2021-01-18-print-street-maps/
+# https://stackoverflow.com/questions/57184346/r-map-zoom-function-making-the-plot-a-circle-rather-than-a-square
+
+################################
+Edinburgh
+################################
+
+# boundary box
+d5_coords <- matrix(c(-3.336754,55.887443,-3.094711,55.997421),
+                 byrow = FALSE, nrow = 2, ncol = 2, 
+                 dimnames = list(c('x','y'),c('min','max'))) 
+
+d5_location <- d5_coords %>% opq()
+
+# features
+d5_res <- 
+  d5_location %>%
+  add_osm_feature(key = "highway",
+                  value = c("motorway","trunk","primary","motorway_junction","trunk_link","primary_link","motorway_link",
+                            "residential", "living_street")) %>%
+  osmdata_sf()
+
+d5_rail <-
+  d5_location %>%
+  add_osm_feature(key = "railway", value = c("rail", "platform", "station")) %>%
+  osmdata_sf() 
+
+d5_grassland <- 
+  d5_location %>%
+  add_osm_feature(key = "landuse", 
+                  value = c("grass", "greenfield", "recreation_ground", "meadow", "forest")) %>%
+  osmdata_sf()
+
+d5_natural <-
+  d5_location %>%
+  add_osm_feature(key = "natural", 
+                  value = c("wood", "tree_row", "tree", "scrub", "heath", "moor", "grassland", "fell")) %>%
+  osmdata_sf()
+
+d5_water <-
+  d5_location %>%
+  add_osm_feature(key = "natural", value = c("water", "bay", "coastline")) %>%
+  osmdata_sf() 
+
+
+#################################################### circle cutout
+# https://epsg.io/4326
+crs2 <- 6384 
+center = c(long = -3.188438, lat = 55.954966)  
+
+center_proj <-
+  tibble(lat = center["lat"], long = center["long"]) %>%
+  st_as_sf(coords = c("long", "lat"), crs = 4326)
+
+dist   <- 5500
+circle <- 
+  tibble(lat = center["lat"], long = center["long"]) %>%
+  st_as_sf(coords = c("long", "lat"), crs = 4326) %>%
+  st_transform(crs = crs2) %>%
+  st_buffer(dist = dist) %>%
+  st_transform(crs = 4326)
+
+circle_res      <- st_intersection(circle, d5_res$osm_lines)
+circle_grass    <- st_intersection(circle, d5_grassland$osm_polygons)
+circle_natural  <- st_intersection(circle, d5_natural$osm_polygons)
+circle_water    <- st_intersection(circle, d5_water$osm_multipolygons)
+circle_rail     <- st_intersection(circle, d5_rail$osm_lines)
+
+####################################################### plot
+d5_bg    <- "white"
+d5_green <- "#466D1D" # #32612D
+
+plot_edinburgh <-
+ggplot() +
+    geom_sf(data = circle_res,     fill = "black",  color = "black", alpha = 0.4) +
+    geom_sf(data = circle_rail,    fill = "black", color = "black", size = 0.7, alpha = 1) +
+    geom_sf(data = circle_grass,   fill = d5_green, color = d5_green, size = 0.1, alpha = 0.6) +
+    geom_sf(data = circle_natural, fill = d5_green, color = d5_green, size = 0.1, alpha = 0.6) +
+    geom_sf(data = circle_water,   fill = "#91B2C7", lwd = 0, alpha = 0.3) +
+    geom_sf(data = circle, color = "black", fill = NA) +
+  theme_void() +
+  theme(plot.background  = element_rect(fill = d5_bg, color = d5_bg),
+        panel.background = element_rect(fill = d5_bg, color = d5_bg))
+
+```
+
+
+```{r}
+font_add_google("Prata", "prata")
+
+d5_text <- str_wrap("Edinburgh is built upon an extinct volcano, which erupted around 340 million years ago. In the hundreds of millions of years since it stopped erupting, the volcano has been buried beneath other rocks. It has gradually been exposed at the surface and eroded, so that now less than half remains. This means that we can now walk through the crater area and across some of the lava flows, But also go right through the heart of the volcano at Arthur's Seat and see rocks that were created underground during the eruptions.", 20)
+
+panel_edinburgh <-
+ggdraw(xlim = c(0,0.4)) +
+  draw_plot(plot_edinburgh, x = -0.135, y = 0.08, height = 0.80, width = 0.60) +
+  draw_text("Edinburgh, Scotland\n55.9441° N, 3.1618° W", 
+            hjust = 0, x = 0.25, y = 0.86, size = 32, family = "prata", fontface = "bold") +
+  draw_text(d5_text, 
+            hjust = 1, x = 0.39, y = 0.45, size = 16, family = "prata") +
+  draw_text("Data:\nOpenStreetMap.org\nGraphic:\n@NearAndDistant", 
+            hjust = 0, x = 0.26, y = 0.14, size = 10, family = "prata") +
+  draw_image("https://www.onlygfx.com/wp-content/uploads/2018/07/8-grunge-x-1-1024x1006.png",
+             height = 0.005, width = 0.005, x = 0.2025, y = 0.455)
+
+```
+
+#### Saving
+```{r}
+
+ggsave(plot = panel_edinburgh, filename = here::here("graphics/D5_Edinburgh.jpeg"), dpi = 360, height = 13.5, width = 12.8)
 
 ```
 
