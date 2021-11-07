@@ -24,6 +24,29 @@ dir.create(here::here("graphics"))
 # 30 Day Map Challenge
 
 # Day 01 : Points (London Postboxes)
+```{r map , echo = FALSE , fig.align = 'center' , fig.dim = '125%' , message = FALSE}
+library(sf)
+
+#london boundaries, here: https://s3-eu-west-1.amazonaws.com/londondatastore-upload/statistical-gis-boundaries-london.zip
+
+# create temp files
+temp_map <- tempfile(fileext = ".zip")
+unzip_temp_map <- tempfile()
+
+# download zip file into tempfile using hyperlink
+download.file(url = "https://s3-eu-west-1.amazonaws.com/londondatastore-upload/statistical-gis-boundaries-london.zip", destfile = temp_map)
+
+# unzip the tempfile to extract the shp file we need
+unzip_temp_map <- unzip(temp_map)
+
+# read shp file using read_sf
+lnd_shp <- 
+  read_sf('statistical-gis-boundaries-london/ESRI/London_Borough_Excluding_MHW.shp') %>%
+    janitor::clean_names() %>%
+    select(name , code_ons = gss_code , geometry)
+
+```
+
 ```{r}
 
 # boundary box
@@ -49,27 +72,6 @@ streets <-
   location %>%
   add_osm_feature(key = "highway", value = c("residential", "living_street")) %>%
   osmdata_sf()
-
-```
-
-```{r map , echo = FALSE , fig.align = 'center' , fig.dim = '125%' , message = FALSE}
-library(sf)
-
-# create temp files
-temp_map <- tempfile(fileext = ".zip")
-unzip_temp_map <- tempfile()
-
-# download zip file into tempfile using hyperlink
-download.file(url = "https://s3-eu-west-1.amazonaws.com/londondatastore-upload/statistical-gis-boundaries-london.zip", destfile = temp_map)
-
-# unzip the tempfile to extract the shp file we need
-unzip_temp_map <- unzip(temp_map)
-
-# read shp file using read_sf
-lnd_shp <- 
-  read_sf('statistical-gis-boundaries-london/ESRI/London_Borough_Excluding_MHW.shp') %>%
-    janitor::clean_names() %>%
-    select(name , code_ons = gss_code , geometry)
 
 ```
 
@@ -529,6 +531,181 @@ ggsave(plot = panel_uk_lab, filename = here::here("graphics/labour_real_change.j
 
 ```{r}
 
+################################
+Richmond
+################################
+
+# boundary box
+d7_coords <- matrix(c(-0.367056,51.403275,-0.185738,51.50),
+                 byrow = FALSE, nrow = 2, ncol = 2, 
+                 dimnames = list(c('x','y'),c('min','max'))) 
+
+d7_location <- d7_coords %>% opq()
+
+# features
+d7_res <- 
+  d7_location %>%
+  add_osm_feature(key = "highway",
+                  value = c("motorway","trunk","primary","motorway_junction","trunk_link","primary_link","motorway_link",
+                            "residential", "living_street")) %>%
+  osmdata_sf()
+
+d7_rail <-
+  d7_location %>%
+  add_osm_feature(key = "railway", value = c("rail", "platform", "station")) %>%
+  osmdata_sf() 
+
+d7_grassland <- 
+  d7_location %>%
+  add_osm_feature(key = "landuse", 
+                  value = c("grass", "greenfield", "recreation_ground", "meadow", "forest")) %>%
+  osmdata_sf()
+
+d7_park <- 
+  d7_location %>%
+  add_osm_feature(key = "leisure", 
+                  value = c("park", "nature_reserve", "garden", "golf_course")) %>%
+  osmdata_sf()
+
+d7_natural <-
+  d7_location %>%
+  add_osm_feature(key = "natural", 
+                  value = c("wood", "tree_row", "tree", "scrub", "heath", "moor", "grassland", "fell", "meadow")) %>%
+  osmdata_sf()
+
+d7_water <-
+  d7_location %>%
+  add_osm_feature(key = "natural", value = c("water", "bay", "coastline")) %>%
+  osmdata_sf() 
+
+d7_protected <-
+  d7_location %>%
+  add_osm_feature(key = "boundary", value = c("protected_area", "national_park")) %>%
+  osmdata_sf() 
+
+#################################################### circle cutout
+# https://epsg.io
+crs2 <- 6384 
+center = c(long = -0.289078 , lat = 51.456574)  
+
+center_proj <-
+  tibble(lat = center["lat"], long = center["long"]) %>%
+  st_as_sf(coords = c("long", "lat"), crs = 4326)
+
+dist   <- 5750
+circle <- 
+  tibble(lat = center["lat"], long = center["long"]) %>%
+  st_as_sf(coords = c("long", "lat"), crs = 4326) %>%
+  st_transform(crs = crs2) %>%
+  st_buffer(dist = dist) %>%
+  st_transform(crs = 4326)
+
+circle_res         <- st_intersection(circle, d7_res$osm_lines)
+circle_grass       <- st_intersection(circle, d7_grassland$osm_polygons)
+circle_park        <- st_intersection(circle, d7_park$osm_polygons)
+circle_park2       <- st_intersection(circle, d7_park$osm_multipolygons)
+circle_protec      <- st_intersection(circle, d7_protected$osm_multipolygons)
+circle_natural     <- st_intersection(circle, d7_natural$osm_polygons)
+circle_natural_mpg <- st_intersection(circle, d7_natural$osm_multipolygons)
+circle_water       <- st_intersection(circle, d7_water$osm_multipolygons)
+circle_rail        <- st_intersection(circle, d7_rail$osm_lines)
+
+####################################################### plot
+d7_bg    <- "white"
+d7_green <- "#466D1D" # #32612D
+
+plot_richmond <-
+ggplot() +
+    geom_sf(data = circle,              fill = "white",        color = "black") +
+    geom_sf(data = circle_park,         fill = "#B2D3C2", color = d7_green, size = 0.1, alpha = 0.6) +
+    geom_sf(data = circle_park2,        fill = "#B2D3C2", color = d7_green, size = 0.1, alpha = 0.6) +
+    geom_sf(data = circle_protec,       fill = "#B2D3C2", color = d7_green, size = 0.1, alpha = 0.6) +
+    geom_sf(data = circle_grass,        fill = d7_green,  color = d7_green, size = 0.1, alpha = 0.6) +
+    geom_sf(data = circle_natural,      fill = d7_green,  color = d7_green, size = 0.1, alpha = 0.6) +
+    geom_sf(data = circle_natural_mpg,  fill = d7_green,  color = d7_green, size = 0.1, alpha = 0.6) +
+    geom_sf(data = circle_water,        fill = "#0F52BA", color = NA, lwd = 0, alpha = 0.3) +
+    geom_sf(data = circle_res,          fill = "black",   color = "black", alpha = 0.3) +
+    geom_sf(data = circle_rail,         fill = "black",   color = "black", alpha = 1.0, size = 0.7,) +
+  theme_void()
+
+# save image
+ggsave(plot = plot_richmond, filename = here::here("graphics/richmond_trans.png"), dpi = 360, height = 12, width = 10)
+
+```
+
+```{r}
+
+# london background
+lnd_bound <- 
+  readOGR( 
+  dsn = "/Users/patrickcorby/Downloads/statistical-gis-boundaries-london/ESRI", 
+  layer ="London_Borough_Excluding_MHW",
+  verbose=FALSE)
+
+# convert to sf
+lnd_bound_sf <- 
+  st_as_sf(lnd_bound) %>% 
+  janitor::clean_names()
+
+# join green space
+lnd_green_space <-
+readxl::read_xls("/Users/patrickcorby/Downloads/better-envrionment-better-health-data.xls", 
+                 sheet = "Table 1", skip = 1) %>%
+  select(name = "...1", green_space = "Borough Green Space Surface") %>%
+  mutate(green_space = as.numeric(green_space)/100)
+
+lnd_bound_green <-
+  lnd_green_space %>%
+  mutate(name = str_replace(name, "&", "and"),
+         name = if_else(name == "City of Westminster", "Westminster", name)) %>%
+  left_join(lnd_bound_sf) %>%
+  mutate(label = paste0(name, ", ", scales::percent(green_space, 2)))
+
+lnd_sf <- 
+ggplot(data = lnd_bound_green, aes(geometry = geometry)) +
+  geom_sf(color = "grey60" , aes(fill = green_space), alpha = 0.6, show.legend = FALSE) +
+  ggrepel::geom_label_repel(aes(label = label),
+                              size = 2.25,
+                              direction = "y",
+                              force = 0.05,
+                              stat = "sf_coordinates",
+                              min.segment.length = 0,
+                              label.size = 0.1,
+                              colour = "grey30",
+                              segment.colour = "grey40",
+                              fill = "white") +
+  rcartocolor::scale_fill_carto_c(palette = "Emrld") +
+  coord_sf() +
+  theme_void()
+
+```
+
+```{r}
+font_add_google("Prata", "prata")
+font_add_google("Graduate", "graduate")
+
+plot_lnd_green <-
+ggdraw() +
+  draw_plot(lnd_sf, 
+            height = 1.10, width = 1.10,
+            x = -0.25, y = -0.02) +
+  draw_image(here::here("graphics/richmond_trans.png"), 
+             height = 0.85, width = 0.85,
+             x = 0.35, y = -0.08) +
+  draw_text("Green Spaces in London",
+            family = "graduate", size = 38, hjust = 0,
+            x = 0.51, 0.95) +
+  draw_text("Data:ONS; LondonDataStore.gov.uk; OpenStreetMap.org | Graphic: @NearAndDistant",
+            family = "prata", size = 10, hjust = 0,
+            x = 0.60, y = 0.91) +
+  draw_text("Richmond Upon Thames\n51.4420° N, 0.2766° W",
+            family = "graduate", size = 24, hjust = 1,
+            x = 0.98, y = 0.74) +
+  theme(plot.background  = element_rect(fill = "white", color = "white"),
+        panel.background = element_rect(fill = "white", color = "white"))
+
+ggsave(plot = plot_lnd_green, filename = here::here("graphics/lnd_greenspace.png"), dpi = 360, height = 10, width = 15)
+
 ```
 
 
@@ -755,3 +932,4 @@ map_watercolor <- get_stamenmap(bbox, maptype = "watercolor"   , zoom = 11)
 ggmap(map_hybrid, extent = "device")
 
 ```
+
