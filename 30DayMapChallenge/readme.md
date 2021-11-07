@@ -3,9 +3,7 @@
 
 # Day 2: Lines
 
-
 # Day 3: Polygons
-
 
 # Day 4: Hexagons
 ![D3_Manchester_Bee](https://user-images.githubusercontent.com/79040885/140584309-aa1de63d-10c3-4b8e-a78b-9d370eb1ab0d.jpeg)
@@ -13,3 +11,5 @@
 # Day 5: Open Street Map
 ![D5_Edinburgh](https://user-images.githubusercontent.com/79040885/140605181-22ca24b5-1539-438f-abca-3a260d3cca59.jpeg)
 
+# Day 6: Red
+![labour_real_change](https://user-images.githubusercontent.com/79040885/140619755-bbc584ef-e62f-4937-a502-58d2961f62bc.jpeg)
