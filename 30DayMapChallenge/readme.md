@@ -13,3 +13,6 @@
 
 # Day 6: Red
 ![labour_real_change](https://user-images.githubusercontent.com/79040885/140619755-bbc584ef-e62f-4937-a502-58d2961f62bc.jpeg)
+
+# Day 7: Green
+![lnd_greenspace](https://user-images.githubusercontent.com/79040885/140643032-968f9045-b175-4d94-acf4-f7ae15f77006.png)
