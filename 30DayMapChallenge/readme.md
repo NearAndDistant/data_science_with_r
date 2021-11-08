@@ -16,3 +16,6 @@
 
 # Day 7: Green
 ![lnd_greenspace](https://user-images.githubusercontent.com/79040885/140643032-968f9045-b175-4d94-acf4-f7ae15f77006.png)
+
+# Day 8: Blue
+![england_rs](https://user-images.githubusercontent.com/79040885/140749697-e40fd26a-d668-4f88-b552-04aadb2f28b8.jpeg)
