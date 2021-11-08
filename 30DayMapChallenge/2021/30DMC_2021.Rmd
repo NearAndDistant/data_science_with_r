@@ -740,7 +740,7 @@ ukla_rs <-
 # local authority boundaries
 uk_lads <- 
   readOGR( 
-  dsn = "/Users/patrickcorby/Downloads/Local_Authority_Districts_(May_2021)_UK_BFE_V3", 
+  dsn = here::here("Local_Authority_Districts_(May_2021)_UK_BFE_V3"), 
   layer ="LAD_MAY_2021_UK_BFE_V2",
   verbose=FALSE)
 
@@ -805,7 +805,7 @@ ggplot() +
 
 text <- str_wrap("The annual England rough sleeping snapshot takes place on a single date chosen by the local authority between 1 October and 30 November. The snapshot records only those people seen, or thought to be, sleeping rough on a single night. The snapshot takes place in the autumn, rather than Summer where numbers are likely to be higher due to warmer temperatures, or Winter, where numbers may be lower as there are more temporary night shelters set up to ensure people do not sleep on the streets in very cold weather.", 40)
 
-subtext <- "The 2020 snapshot recorded 35,501 rough sleepers.\nHelp those in need when you see them this Winter.\nGive generously: www.salvationarmy.org.uk"
+subtext <- "The 2020 snapshot recorded 2,661 rough sleepers.\nHelp those in need when you see them this Winter.\nGive generously: www.salvationarmy.org.uk"
 
 
 # panel
