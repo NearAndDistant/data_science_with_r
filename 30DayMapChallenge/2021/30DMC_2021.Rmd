@@ -713,8 +713,134 @@ ggsave(plot = plot_lnd_green, filename = here::here("graphics/lnd_greenspace.png
 
 ```{r}
 
+# rough sleeping data: https://www.gov.uk/government/statistics/rough-sleeping-snapshot-in-england-autumn-2020
+
+# create temp files
+temp_rs <- tempfile(fileext = ".xlsx")
+
+# download zip file into tempfile using hyperlink
+download.file(url = "https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/964154/rs_statistics2020.xlsx", destfile = temp_rs)
+
+ukla_rs_raw <- readxl::read_xlsx(temp_rs , sheet = "Table 1 Total", skip = 2) 
+
+ukla_rs <-
+  ukla_rs_raw %>%
+  janitor::clean_names() %>%
+  rename(ons_code = "local_authority_ons_code") %>%
+  filter(!is.na(ons_code),
+         !is.na(region_ons_code)) %>%
+  pivot_longer(cols = c(x2010:x2020), names_to = "year", values_to = "rough_sleepers") %>%
+  mutate(year = str_remove(year, "x"),
+         year = as.numeric(year)) %>%
+  mutate(local_authority = if_else(local_authority == "East Northamptonshire" , "North Northamptonshire", local_authority),
+         ons_code        = if_else(ons_code        == "E07000152"             ,"E06000061"              , ons_code),
+         local_authority = if_else(local_authority == "South Northamptonshire", "West Northamptonshire" , local_authority),
+         ons_code        = if_else(ons_code        == "E07000155"             ,"E06000062"              , ons_code))
+
+# local authority boundaries
+uk_lads <- 
+  readOGR( 
+  dsn = "/Users/patrickcorby/Downloads/Local_Authority_Districts_(May_2021)_UK_BFE_V3", 
+  layer ="LAD_MAY_2021_UK_BFE_V2",
+  verbose=FALSE)
+
+uk_lads_simp <- 
+  st_as_sf(uk_lads) %>%
+  rmapshaper::ms_simplify() %>%
+  janitor::clean_names() %>%
+  rename(ons_code = "lad21cd")
+
+# check plot
+ggplot() +
+  geom_sf(data = uk_lads_simp, 
+          color = "#FFFFFF", size = 0.25) +
+  coord_sf()
+
+# Ireland outline for map
+library(rnaturalearth)
+ireland <- ne_countries(scale = "medium", returnclass = "sf", country = "ireland")
+
 ```
 
+```{r}
+
+# join tables
+ukrs_labound <-
+  uk_lads_simp %>%
+  left_join(ukla_rs %>% filter(year == 2020), by = "ons_code")
+
+```
+
+```{r}
+
+# plot uk
+plot_uk_rs <-
+ggplot() +
+  geom_sf(data = ireland, fill = "#808080", color = "#b4b3b4", size = 0.25) +
+  geom_sf(data = ukrs_labound, 
+          aes(fill = rough_sleepers, geometry = geometry),
+          color = "#b4b3b4", size = 0.25) +
+  ggsci::scale_fill_material(palette = "blue", na.value = "#808080",
+                             breaks = rev(c(0, 50, 100, 150, 200)),
+                             labels = rev(c("0-49", "50-99", "100-149", "150-199", "+200"))) + 
+  guides(fill = guide_legend(title.position = "top", title.hjust = 1, label.position = "left")) +
+  labs(fill = NULL) +
+  coord_sf() +
+  theme_void() +
+  theme(legend.position = c(0.75,0.60),
+        legend.direction = "vertical",
+        legend.title = element_text(family = "graduate"),
+        legend.key.width = unit(1, "cm"),
+        legend.text = element_text(color = "white"))
+
+# plot london
+plot_lnd_rs <-
+ggplot() +
+  geom_sf(data = ukrs_labound %>% filter(region == "London"), 
+          aes(fill = rough_sleepers, geometry = geometry),
+          color = "#b4b3b4", size = 0.25, show.legend = FALSE) +
+  ggsci::scale_fill_material(palette = "blue") + 
+  coord_sf() +
+  theme_void()
+
+text <- str_wrap("The annual England rough sleeping snapshot takes place on a single date chosen by the local authority between 1 October and 30 November. The snapshot records only those people seen, or thought to be, sleeping rough on a single night. The snapshot takes place in the autumn, rather than Summer where numbers are likely to be higher due to warmer temperatures, or Winter, where numbers may be lower as there are more temporary night shelters set up to ensure people do not sleep on the streets in very cold weather.", 40)
+
+subtext <- "The 2020 snapshot recorded 35,501 rough sleepers.\nHelp those in need when you see them this Winter.\nGive generously: www.salvationarmy.org.uk"
+
+
+# panel
+panel_eng_rs <-
+ggdraw(xlim = c(0.42,0.65)) +
+  draw_plot(plot_uk_rs) +
+  draw_plot(plot_lnd_rs, 
+            height = 0.15, width = 0.15,
+            x = 0.52, y = 0.08) +
+  draw_text("Englands\nRough\nSleepers", 
+            size = 34, family = "graduate", hjust = 0, color = "white",
+            x = 0.5585, y = 0.765) +
+  draw_text(text, 
+            size = 9, family = "prata", hjust = 0, color = "white",
+            x = 0.56, y = 0.5275) +
+  draw_text(subtext, 
+            size = 9, family = "graduate", hjust = 0, color = "white",
+            x = 0.56, y = 0.35) +
+  annotate("segment", color = "#b4b3b4",
+           x = 0.59, xend = 0.59,
+           y = 0.27, yend = 0.165) +
+  draw_text("City of Westminster (242)", 
+            size = 8, family = "prata", hjust = 0, color = "white",
+            x = 0.59, y = 0.28) +
+  draw_text("Data: @ONSGeography & gov.uk | Graphic: @NearAndDistant",
+            family = "prata", size = 9, hjust = 0, color = "white",
+            x = 0.56, y = 0.07) +
+  theme(plot.background  = element_rect(fill = "#232023", color = "#232023"),
+        panel.background = element_rect(fill = "#232023", color = "#232023"))
+
+
+ggsave(plot = panel_eng_rs, filename = here::here("graphics/england_rs.jpeg"), dpi = 360, height = 10, width = 11)
+
+
+```
 
 # Day 09 : Monochrome
 
