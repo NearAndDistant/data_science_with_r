@@ -19,3 +19,6 @@
 
 # Day 8: Blue
 ![england_rs](https://user-images.githubusercontent.com/79040885/140753491-580c32a9-21e3-4bbe-bdbc-b688306f79ad.jpeg)
+
+# Day 9: Monochrome
+![d9_monochrome_nwc](https://user-images.githubusercontent.com/79040885/140915899-73cd3043-ffd8-4a5d-b733-3128c8ecc66f.jpeg)
