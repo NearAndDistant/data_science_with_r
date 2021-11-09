@@ -207,13 +207,11 @@ ggplot() +
 
 ```
 
-
 # Day 03 : Polygons
 
 ```{r}
 
 ```
-
 
 # Day 04 : Hexagons
 
@@ -842,9 +840,96 @@ ggsave(plot = panel_eng_rs, filename = here::here("graphics/england_rs.jpeg"), d
 
 ```
 
-# Day 09 : Monochrome
+# Day 09 : Monochrome (Newcastle)
 
 ```{r}
+# view features: www.openstreetmap.org
+# feature bible: https://wiki.openstreetmap.org/wiki/Map_features#Boundary_types
+# feature: https://rforjournalists.com/2020/12/15/how-to-access-open-street-map-in-r/
+
+# circular borders
+# https://taraskaduk.com/posts/2021-01-18-print-street-maps/
+# https://stackoverflow.com/questions/57184346/r-map-zoom-function-making-the-plot-a-circle-rather-than-a-square
+
+################################
+Newcastle Upon Tyne
+################################
+
+font_add_google("Prata", "prata")
+font_add_google("Graduate", "graduate")
+
+# boundary box
+d9_coords <- matrix(c(-1.70,54.90,-1.485,55.06), #c(-1.70, -1.485), ylim = c(54.90, 55.06)
+                 byrow = FALSE, nrow = 2, ncol = 2, 
+                 dimnames = list(c('x','y'),c('min','max'))) 
+
+d9_location <- d9_coords %>% opq()
+
+# features
+d9_res <- 
+  d9_location %>%
+  add_osm_feature(key = "highway",
+                  value = c("motorway","trunk","primary","motorway_junction","trunk_link","primary_link","motorway_link",
+                            "residential", "living_street", "pedestrian", "busway")) %>%
+  osmdata_sf()
+
+d9_paths <-
+  d9_location %>%
+  add_osm_feature(key = "highway",
+                  value = c("footway")) %>%
+  osmdata_sf()
+
+d9_rail <-
+  d9_location %>%
+  add_osm_feature(key = "railway", value = c("rail", "platform", "station")) %>%
+  osmdata_sf() 
+
+d9_water <-
+  d9_location %>%
+  add_osm_feature(key = "natural", value = c("water", "bay", "coastline")) %>%
+  osmdata_sf() 
+
+####################################################### plot
+d9_bg    <- "#1a1711"
+d9_map   <- "#dcd3c7"
+d9_blue  <- "#59788E"
+
+# plot
+plot_nwc <-
+ggplot() +
+  # water
+    geom_sf(data = d9_water$osm_polygons,
+            fill = d9_blue, color = d9_blue, size = .2, alpha = 0.8) +
+    geom_sf(data = d9_water$osm_multipolygons,
+            fill = d9_blue, color = d9_blue, size = .2, alpha = 0.8) +
+  # roads
+    geom_sf(data = d9_paths$osm_lines,
+            color = "#767374", size = .15, alpha = 0.8) +
+    geom_sf(data = d9_res$osm_lines,
+            color = d9_map, size = .2, alpha = 0.9) +
+    geom_sf(data = d9_rail$osm_lines,
+            color = d9_map, size = .3, alpha = 0.8) +
+  coord_sf(xlim = c(-1.70, -1.485), ylim = c(54.90, 55.06)) +
+  theme_void() +
+  theme(plot.background  = element_rect(fill = d9_bg, color = d9_bg),
+        panel.background = element_rect(fill = d9_bg, color = d9_bg))
+
+
+# panel
+panel_nwc <- 
+ggdraw(xlim = c(0.4,0.8)) +
+  draw_plot(plot_nwc, 
+            width = 1.2, height = 0.9,
+            y = 0.095) +
+  draw_text("Newcastle Upon Tyne\n54.9764° N, 1.613359° W",
+            x = 0.6 , y = 0.06,
+            family = "graduate") +
+  draw_text("Data: @OpenStreetMap | Graphic: @NearAndDistant",
+            x = 0.6, y = 0.02,
+            family = "prata", size = 8) 
+  
+
+ggsave(plot = panel_nwc, filename = here::here("2021/graphics/d9_monochrome_nwc.jpeg"), dpi = 360, height = 10, width = 7)
 
 ```
 
