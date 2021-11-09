@@ -921,9 +921,9 @@ ggdraw(xlim = c(0.4,0.8)) +
   draw_plot(plot_nwc, 
             width = 1.2, height = 0.9,
             y = 0.095) +
-  draw_text("Newcastle Upon Tyne\n54.9764° N, 1.613359° W",
+  draw_text("Newcastle Upon Tyne\n54.9812° N, -1.6976° W",
             x = 0.6 , y = 0.06,
-            family = "graduate") +
+            family = "graduate", size = 16) +
   draw_text("Data: @OpenStreetMap | Graphic: @NearAndDistant",
             x = 0.6, y = 0.02,
             family = "prata", size = 8) 
