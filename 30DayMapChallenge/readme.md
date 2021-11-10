@@ -22,3 +22,6 @@
 
 # Day 9: Monochrome
 ![d9_monochrome_nwc](https://user-images.githubusercontent.com/79040885/140915899-73cd3043-ffd8-4a5d-b733-3128c8ecc66f.jpeg)
+
+# Day 10: Raster
+![d10_africaraster](https://user-images.githubusercontent.com/79040885/141196316-3de301f8-e6dd-437a-acff-b52277d00b31.png)
