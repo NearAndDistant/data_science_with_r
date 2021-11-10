@@ -1,0 +1,82 @@
+---
+title: "Tidy Template"
+author: "NearAndDistant"
+date: "29/09/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#### Setup & Import
+```{r}
+library(tidyverse)
+library(raster)
+library(tmap)
+# import data for project
+library(afrilearndata)
+library(afrihealthsites)
+
+# create driectory for new project
+dir.create(here::here("Week 46 : Africar"))
+
+```
+
+#### Palette
+```{r}
+
+library(showtext); showtext_auto()
+font_add_google("Prata", "prata")
+font_add_google("Graduate", "graduate")
+
+```
+
+```{r}
+
+africa_pop_2020 <- 
+as_tibble(as(afripop2000, "SpatialPixelsDataFrame")) %>% 
+rename(value = "ppp_2000_1km_Aggregated") %>%
+mutate(value2 = if_else(value > 400, 400, value))
+
+africa_cap <- africapitals %>% mutate(lat = unlist(map(geometry,1)), long = unlist(map(geometry,2)))
+
+```
+
+```{r}
+library(cowplot)
+library(ggsflabel)
+
+africaraster <-
+ggdraw(xlim = c(0.25,0.75),
+africa_pop_2020 %>%
+ggplot() +
+  geom_tile(aes(x, y, fill = value2)) +
+  geom_sf_label_repel(data = africapitals, aes(label = capitalname), 
+                      color = "grey10", family = "prata", size = 2.5, nudge_x = -0.5,
+                      segment = TRUE, segment.color = "white", segment.size = 0.5) +
+  rcartocolor::scale_fill_carto_c(palette = "Fall", labels = c(0,100,200,300,"over 400")) +
+  guides(fill = guide_colorbar(title = "Population Density (people / km²)", label.position = "bottom", title.position = "top")) +
+  coord_fixed(1) +
+  theme_void() +
+  theme(legend.position = c(0.19,0.13),
+        legend.direction = "horizontal",
+        legend.title = element_text(color = "white", family = "graduate"),
+        legend.text = element_text(color = "white", family = "prata"),
+        legend.key.width = unit(1.5, "cm"),
+        plot.background = element_rect(fill = "#2C3E4C", color = "white", size = 6),
+        plot.caption = element_text(hjust = 1, color = "grey80"),
+        plot.margin = margin(1, 1, 1, 1, unit = "cm"))) +
+annotate("text", label = "AFRICA", 
+         x = 0.3625, y = 0.24, family = "graduate", color = "white", size = 20, face = "bold") +
+annotate("text", label = "Data: {afrilearndata} | Graphic: @NearAndDistant",
+         x = 0.3675, y = 0.10, family = "prata", color = "white", size = 3.5)
+
+```
+
+#### Saving
+```{r}
+
+ggsave(plot = africaraster, file = here::here("Week 46 : Africar/africaraster.png"), dpi = 360, height = 10, width = 10)
+
+```

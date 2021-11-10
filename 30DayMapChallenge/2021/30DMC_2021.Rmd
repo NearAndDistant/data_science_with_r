@@ -933,7 +933,6 @@ ggsave(plot = panel_nwc, filename = here::here("2021/graphics/d9_monochrome_nwc.
 
 ```
 
-
 # Day 10 : Raster
 
 ```{r}
