@@ -77,6 +77,6 @@ annotate("text", label = "Data: {afrilearndata} | Graphic: @NearAndDistant",
 #### Saving
 ```{r}
 
-ggsave(plot = africaraster, file = here::here("Week 46 : Africar/africaraster.png"), dpi = 360, height = 10, width = 10)
+ggsave(plot = africaraster, file = here::here("Week 46 : Africar/africaraster.png"), dpi = 360, height = 10, width = 9.75)
 
 ```
