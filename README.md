@@ -1,6 +1,8 @@
 # Data Science with R: Projects
 
 ## ArficaR Raster
+[Code](https://github.com/NearAndDistant/data_science_with_r/blob/main/Tidy_Tuesday/2021/Week%2046%20:%20Africar/Code.Rmd)
+
 ![d10_africaraster](https://user-images.githubusercontent.com/79040885/141197441-df3d7567-1b94-4aa0-b0e8-cb0e5580e6d8.png)
 
 ## Registered Nurses (BLS)
