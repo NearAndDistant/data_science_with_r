@@ -1,5 +1,8 @@
 # Data Science with R: Projects
 
+## ArficaR Raster
+![d10_africaraster](https://user-images.githubusercontent.com/79040885/141197441-df3d7567-1b94-4aa0-b0e8-cb0e5580e6d8.png)
+
 ## Registered Nurses (BLS)
 
 "The Areas of the blue and red outline are measured from the centreas the common vertex.
