@@ -13,6 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(osmdata)
 library(rgdal)
+library(sf)
 
 library(cowplot)
 library(showtext); showtext_auto()
@@ -980,9 +981,78 @@ https://osdatahub.os.uk/downloads/open/250kScaleColourRaster
 # Day 16 : Urban / Rural
 
 ```{r}
+# https://www.gov.uk/government/statistics/2011-rural-urban-classification-lookup-tables-for-all-geographies
+
+msoa_urban <-
+readODS::read_ods(here::here("2021/Rural_Urban_Classification_2011_lookup_tables_for_small_area_geographies.ods"), sheet = "MSOA11", skip = 2) %>%
+  rename(ons_code = `Middle Super Output Area 2011 Code`) %>%
+  janitor::clean_names()
+
+# local authority boundaries
+uk_msoa <- 
+  readOGR( 
+  dsn = "/Users/patrickcorby/Documents/Data/Middle_Layer_Super_Output_Areas_(December_2011)_Boundaries_Generalised_Clipped_(BGC)_EW_V3-shp", 
+  layer ="Middle_Layer_Super_Output_Areas_(December_2011)_Boundaries_Generalised_Clipped_(BGC)_EW_V3",
+  verbose = FALSE)
+
+# simplify
+uk_msoa_simp <- 
+  st_as_sf(uk_msoa) %>%
+  rmapshaper::ms_simplify() %>%
+  rename(ons_code = "MSOA11CD") %>%
+  janitor::clean_names()
+
+# Ireland outline for map
+library(rnaturalearth)
+ireland <- ne_countries(scale = "medium", returnclass = "sf", country = "ireland")
+
+# join tables
+uk_msoa_urban <-
+  uk_msoa_simp %>%
+  left_join(msoa_urban, by = "ons_code")
 
 ```
 
+```{r}
+
+fill <- "#333333"
+
+# check plot
+msoa_rural_urban <-
+ggplot() +
+  geom_sf(data = uk_msoa_urban, aes(fill = rural_urban_classification_2011_2_fold),
+          color = "#C5C6D0", size = 0.15) +
+  geom_sf(data = ireland, color = "#C5C6D0", fill = "#373737", size = 0.15) +
+  scale_fill_manual(values = c("#373737", "#C5C6D0")) +
+  coord_sf() +
+  labs(fill = NULL) +
+  theme_void() +
+  theme(legend.position  = c(0.11,0.10),
+        legend.text = element_text(color = "white", size = 20),
+        plot.background  = element_rect(fill = fill, color = fill),
+        panel.background = element_rect(fill = fill, color = fill))
+
+## final
+library(cowplot)
+font_add_google("IM Fell English", "english")
+
+panel_urban <-
+ggdraw() +
+  draw_plot(msoa_rural_urban) +
+  draw_text("England and Wales\nRural and Urban Areas",
+            x = 0.15, y = 0.24,
+            size = 34, color = "white", hjust = 0, family = "english") +
+  draw_text("81.9% live in Urban Areas",
+            x = 0.15, y = 0.155,
+            size = 20, color = "white", hjust = 0, family = "prata") +
+  draw_text("Data: ONS & ONS Geography | Graphic: @NearAndDistant",
+            x = 0.56, y = 0.11,
+            size = 14, color = "white", hjust = 0, family = "english")  
+
+# save
+ggsave(plot = panel_urban, filename = here::here("2021/graphics/d16_urban.png"), dpi = 360, height = 10, width = 15.75)
+
+```
 
 # Day 17 : Land
 
