@@ -25,3 +25,6 @@
 
 # Day 10: Raster
 ![d10_africaraster](https://user-images.githubusercontent.com/79040885/141196316-3de301f8-e6dd-437a-acff-b52277d00b31.png)
+
+# Day 16: Urban
+![d16_urban](https://user-images.githubusercontent.com/79040885/142063900-dfcbbbb5-bb39-49ec-b8d1-7ce786cba674.png)
