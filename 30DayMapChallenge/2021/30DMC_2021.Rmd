@@ -637,7 +637,7 @@ ggsave(plot = plot_richmond, filename = here::here("graphics/richmond_trans.png"
 # london background
 lnd_bound <- 
   readOGR( 
-  dsn = "/Users/patrickcorby/Downloads/statistical-gis-boundaries-london/ESRI", 
+  dsn = here::here("statistical-gis-boundaries-london/ESRI"), 
   layer ="London_Borough_Excluding_MHW",
   verbose=FALSE)
 
@@ -648,7 +648,7 @@ lnd_bound_sf <-
 
 # join green space
 lnd_green_space <-
-readxl::read_xls("/Users/patrickcorby/Downloads/better-envrionment-better-health-data.xls", 
+readxl::read_xls(here::here("better-envrionment-better-health-data.xls"), 
                  sheet = "Table 1", skip = 1) %>%
   select(name = "...1", green_space = "Borough Green Space Surface") %>%
   mutate(green_space = as.numeric(green_space)/100)
@@ -991,7 +991,7 @@ readODS::read_ods(here::here("2021/Rural_Urban_Classification_2011_lookup_tables
 # local authority boundaries
 uk_msoa <- 
   readOGR( 
-  dsn = "/Users/patrickcorby/Documents/Data/Middle_Layer_Super_Output_Areas_(December_2011)_Boundaries_Generalised_Clipped_(BGC)_EW_V3-shp", 
+  dsn = here::here("Middle_Layer_Super_Output_Areas_(December_2011)_Boundaries_Generalised_Clipped_(BGC)_EW_V3-shp"), 
   layer ="Middle_Layer_Super_Output_Areas_(December_2011)_Boundaries_Generalised_Clipped_(BGC)_EW_V3",
   verbose = FALSE)
 
@@ -1050,13 +1050,58 @@ ggdraw() +
             size = 14, color = "white", hjust = 0, family = "english")  
 
 # save
-ggsave(plot = panel_urban, filename = here::here("2021/graphics/d16_urban.png"), dpi = 360, height = 10, width = 15.75)
+ggsave(plot = panel_urban, filename = here::here("2021/graphics/d16_urban.jpeg"), dpi = 360, height = 10, width = 15.75)
 
 ```
 
 # Day 17 : Land
 
 ```{r}
+# https://data.london.gov.uk/dataset/land-use-ward
+
+land_use_ward <-
+readxl::read_xls(here::here("2021/land-use-glud-ward.xls"), sheet = "Percent") %>%
+janitor::clean_names()
+
+# local authority boundaries
+lnd_wards <- 
+  readOGR( 
+  dsn = here::here("statistical-gis-boundaries-london/ESRI"), 
+  layer ="London_Ward_CityMerged",
+  verbose = FALSE)
+
+# simplify
+lnd_wards_simp <- 
+  st_as_sf(lnd_wards) %>%
+  rmapshaper::ms_simplify() %>%
+  janitor::clean_names()
+
+# join tables
+lnd_wards_land <-
+  lnd_wards_simp %>%
+  left_join(land_use_ward, by = c(name = "area_name"))
+
+```
+
+```{r}
+
+fill <- "white"
+
+# check plot
+lnd_wards_land %>%
+mutate(area_of_greenspace = area_of_greenspace / 100) %>%
+mutate(name = str_remove(name, "St. ")) %>%
+ggplot() +
+  geom_sf(aes(fill = area_of_greenspace),
+          color = "#373737", size = 0.15) +
+  rcartocolor::scale_fill_carto_c(palette = "ag_GrnYl", direction = -1) + 
+  coord_sf() +
+  labs(fill = NULL) +
+  theme_void() +
+  theme(legend.position  = c(0.11,0.10),
+        legend.text = element_text(color = "white", size = 20),
+        plot.background  = element_rect(fill = fill, color = fill),
+        panel.background = element_rect(fill = fill, color = fill))
 
 ```
 
