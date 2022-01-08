@@ -1,0 +1,225 @@
+---
+title: "Tidy Template"
+author: "NearAndDistant"
+date: "29/09/2021"
+output: html_document
+---
+
+##  BYOD
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#### Setup & Import
+
+Codebook: 
+https://www.sfb-governance.de/publikationen/daten/_elemente_startseite/3spalten/datensaetze_quantitativ/Codebook_Governance_and_Limited_Statehood_Dataset_March2017.pdf
+
+```{r}
+library(tidyverse)
+
+# import data for project
+# create temp files
+temp <- tempfile(fileext = ".zip")
+unzip_temp <- tempfile()
+
+# download zip file into tempfile using hyperlink
+download.file(url = "https://www.sfb-governance.de/publikationen/daten/_elemente_startseite/3spalten/datensaetze_quantitativ/Governance_and_Limited_Statehood_Dataset_March2017.zip", destfile = temp)
+
+# unzip the tempfile to extract the shp file we need
+unzip_temp <- unzip(temp)
+
+# read dta file using Haven
+library(haven)
+
+gls_raw <- read_dta(here::here("Governance_and_Limited_Statehood_Dataset_March2017.dta")) 
+
+```
+
+#### Clean & Wrangle
+```{r}
+
+gls_clean <- 
+  gls_raw %>%
+  select(ccode, country, year, statehood) %>%
+  mutate(statehood_fct = cut_interval(statehood, 4, labels = c("None", "Very Limited",  "Limited", "Consolidated"))) %>%
+  mutate(country = if_else(country == "United States", "United States of America", country))
+
+```
+
+#### Create Interrupted Goode Homolosine
+tutorial, here: https://wilkelab.org/practicalgg/articles/goode.html
+
+```{r}
+library(cowplot)   # for theme_minimal_grid()
+library(sf)        # for manipulation of simple features objects
+library(rworldmap) # for getMap() [Do you want to install from sources the package which needs compilation? (Yes/no/cancel) no]
+
+world_sf <- st_as_sf(getMap(resolution = "low"))
+
+world_sf <- world_sf %>% janitor::clean_names() %>% select(sovereignt, geometry)
+
+ggplot(world_sf) + 
+  geom_sf(size = 0.5/.pt) +
+  theme_minimal_grid()
+
+# reproject
+crs_goode <- "+proj=igh"
+
+ggplot(world_sf) + 
+  geom_sf(size = 0.5/.pt) +
+  coord_sf(crs = crs_goode) +
+  theme_minimal_grid()
+
+# projection outline in long-lat coordinates
+lats <- c(
+  90:-90, # right side down
+  -90:0, 0:-90, # third cut bottom
+  -90:0, 0:-90, # second cut bottom
+  -90:0, 0:-90, # first cut bottom
+  -90:90, # left side up
+  90:0, 0:90, # cut top
+  90 # close
+)
+longs <- c(
+  rep(180, 181), # right side down
+  rep(c(80.01, 79.99), each = 91), # third cut bottom
+  rep(c(-19.99, -20.01), each = 91), # second cut bottom
+  rep(c(-99.99, -100.01), each = 91), # first cut bottom
+  rep(-180, 181), # left side up
+  rep(c(-40.01, -39.99), each = 91), # cut top
+  180 # close
+)
+
+goode_outline <- 
+  list(cbind(longs, lats)) %>%
+  st_polygon() %>%
+  st_sfc(crs = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+
+# now we need to work in transformed coordinates, not in long-lat coordinates
+goode_outline <- st_transform(goode_outline, crs = crs_goode)
+
+# get the bounding box in transformed coordinates and expand by 10%
+xlim <- st_bbox(goode_outline)[c("xmin", "xmax")]*1.1
+ylim <- st_bbox(goode_outline)[c("ymin", "ymax")]*1.1
+
+# turn into enclosing rectangle
+goode_encl_rect <- 
+  list(
+    cbind(
+      c(xlim[1], xlim[2], xlim[2], xlim[1], xlim[1]), 
+      c(ylim[1], ylim[1], ylim[2], ylim[2], ylim[1])
+    )
+  ) %>%
+  st_polygon() %>%
+  st_sfc(crs = crs_goode)
+
+# calculate the area outside the earth outline as the difference
+# between the enclosing rectangle and the earth outline
+goode_without <- st_difference(goode_encl_rect, goode_outline)
+
+# run
+ggplot(world_sf) + 
+  geom_sf(size = 0.5/.pt) +
+  geom_sf(data = goode_without, fill = "white", color = "NA") +
+  coord_sf(crs = crs_goode) +
+  theme_minimal_grid()
+
+```
+
+```{r}
+
+ggplot(world_sf) + 
+  geom_sf(fill = "#E69F00B0", color = "black", size = 0.5/.pt) +
+  geom_sf(data = goode_without, fill = "white", color = "NA") +
+  geom_sf(data = goode_outline, fill = NA, color = "gray30", size = 0.5/.pt) +
+  coord_sf(crs = crs_goode, xlim = 0.95*xlim, ylim = 0.95*ylim, expand = FALSE) +
+  theme_minimal_grid() +
+  theme(panel.background = element_rect(fill = "#56B4E950", color = "white", size = 1),
+        panel.grid.major = element_line(color = "gray30", size = 0.25))
+
+```
+
+#### Joining
+```{r}
+
+gls_map <-
+  world_sf %>%
+  left_join(gls_clean %>% filter(year == 2015) , by = c("sovereignt" = "country")) %>%
+  mutate(statehood_fct = as.character(statehood_fct),
+         statehood_fct = if_else(is.na(statehood_fct), "Insufficient Data", statehood_fct)) %>%
+  group_by(statehood_fct) %>%
+  mutate(statehood_n = paste0(statehood_fct, " (", n(), ")")) %>%
+  ungroup() %>%
+  mutate(statehood_fct_lab = factor(statehood_n, levels = c("Consolidated (89)", "Limited (73)", "Very Limited (7)", "None (1)", "Insufficient Data (74)")))
+
+```
+
+#### Palette
+```{r}
+library(showtext); showtext_auto()
+font_add_google("Roboto", "roboto")
+font_add_google("Cinzel Decorative", "cinzel")
+font_add_google("Bad Script", "script")
+
+library(MetBrewer)
+
+MetBrewer::colorblind_palettes
+scales::show_col(MetBrewer::met.brewer("Pillement", 4))
+
+palette    <- MetBrewer::met.brewer("Veronese", 4)
+
+text <- str_wrap('"The vast amount of contemporary states exhibit areas of limited statehood with regards to centralised control within parts of the territory, particularly policy areas or parts of the population, or a combination thereof. Areas of limited statehood are ubiquitous in the international system, but also in historical comparison. After all the state monopoly over the means of violence has only been around since the ninteenth century"', 150)
+
+```
+
+#### Joined Map
+```{r}
+library(cowplot)
+
+ggdraw(
+ggplot(gls_map) + 
+  geom_sf(aes(geometry = geometry, fill = statehood_fct_lab), color = "white", size = 0.3/.pt, alpha = 0.85) +
+  geom_sf(data = goode_without, fill = "white", color = "NA") +
+  geom_sf(data = goode_outline, fill = NA, color = "gray30", size = 0.5/.pt, linetype = "dashed") +
+  coord_sf(crs = crs_goode, xlim = 0.95*xlim, ylim = 0.95*ylim, expand = FALSE, datum = NA) +
+  scale_fill_manual(values = c(rev(palette), "grey80")) +
+  labs(fill = NULL) +
+  theme(legend.position   = c(0.50, -0.05),
+        legend.direction  = "horizontal",
+        legend.text       = element_text(family = "cinzel", size = 12),
+        legend.key.width  = unit(1, "cm"),
+        legend.spacing.x  = unit(1.2, 'cm'),
+        legend.text.align = 1,
+        panel.background = element_rect(fill = "white", color = "white", size = 1),
+        panel.grid.major = element_line(color = "gray30", size = 0.25),
+        plot.margin = margin(0,0,-2,0, unit = "cm"))) +
+draw_text("Degrees of Statecraft", 
+          x = 0.05, y = 0.96, family = "cinzel", size = 42, hjust = 0.05, color = "grey20") +
+draw_text(text, 
+          x = 0.03, y = 0.89, family = "cinzel", size = 10, hjust = 0.00, color = "grey20") +
+draw_text(" - The Oxford Handbook of Limited Governance and Limited Statehood, T. Risse & T.A Bozel, 2018", 
+          x = 0.03, y = 0.845, family = "cinzel", size = 10, hjust = 0.00, color = "grey20", fontface = "bold") + 
+draw_text(str_wrap('"It is said that the history of peoples who have a history is a history of class struggle. It might be said that with at least as much truthfulness, that the history of peoples without history is a history of their struggle against the state" - Pierre Clastres',35), 
+          x = 0.06, y = 0.4, family = "script", size = 12, hjust = 0.00, color = "grey20", fontface = "italic") +
+draw_text("Graphic: @NearAndDistant | Source: Eric Stollenwerk & Jan Opper, Governance and Limited Statehood (2017)",
+          x = 0.5, y = 0.03, family = "cinzel", size = 10, color = "grey20")
+  
+
+```
+
+#### Saving
+```{r}
+
+ggsave(here::here("degrees_of_statecraft.jpeg"), dpi = 360, height = 9.90, width = 16.1)
+
+```
+
+***
+
+R markdown allows to easily format your text. You can add [links](www.r-graph-gallery.com), write in **bold** or *italic*.
+
+Further formatting can be found [here](https://holtzy.github.io/Pimp-my-rmd/)
+
+***
