@@ -1,5 +1,10 @@
 # Data Science with R: Projects
 
+## Degrees of Statecraft
+[Code](https://github.com/NearAndDistant/data_science_with_r/tree/main/Tidy_Tuesday/2022/Week%201%20:%20BYOD)
+
+![degrees_of_statecraft](https://user-images.githubusercontent.com/79040885/148646644-54ea670c-9eff-48f2-8dd0-4542cdcbdf41.jpeg)
+
 ## ArficaR Raster
 [Code](https://github.com/NearAndDistant/data_science_with_r/blob/main/Tidy_Tuesday/2021/Week%2046%20:%20Africar/Code.Rmd)
 
