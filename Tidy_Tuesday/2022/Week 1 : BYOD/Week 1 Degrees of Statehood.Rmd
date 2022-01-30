@@ -216,6 +216,35 @@ ggsave(here::here("degrees_of_statecraft.jpeg"), dpi = 360, height = 9.90, width
 
 ```
 
+#### Minimal Version
+```{r}
+
+ggdraw(
+ggplot(gls_map) + 
+  geom_sf(aes(geometry = geometry, fill = statehood_fct_lab), color = "white", size = 0.3/.pt, alpha = 0.85) +
+  geom_sf(data = goode_without, fill = "white", color = "NA") +
+  geom_sf(data = goode_outline, fill = NA, color = "gray30", size = 0.5/.pt, linetype = "dashed") +
+  coord_sf(crs = crs_goode, xlim = 0.95*xlim, ylim = 0.95*ylim, expand = FALSE, datum = NA) +
+  scale_fill_manual(values = c(rev(palette), "grey80")) +
+  labs(fill = NULL) +
+  theme(legend.position   = c(0.47, -0.15),
+        legend.direction  = "horizontal",
+        legend.text       = element_text(family = "cinzel", size = 12),
+        legend.key.width  = unit(1, "cm"),
+        legend.spacing.x  = unit(1.2, 'cm'),
+        legend.text.align = 1,
+        panel.background = element_rect(fill = "white", color = "white", size = 1),
+        panel.grid.major = element_line(color = "gray30", size = 0.25),
+        plot.margin = margin(0,0,0,0, unit = "cm"))) +
+draw_text(str_wrap('"It is said that the history of peoples who have a history is a history of class struggle. It might be said that with at least as much truthfulness, that the history of peoples without history is a history of their struggle against the state" - Pierre Clastres',35), 
+          x = 0.05, y = 0.45, family = "script", size = 12, hjust = 0.00, color = "grey20", fontface = "italic")
+
+#### save
+ggsave(here::here("degrees_of_statecraft_min.jpeg"), dpi = 360, height = 9.90, width = 16.1)
+
+```
+
+
 ***
 
 R markdown allows to easily format your text. You can add [links](www.r-graph-gallery.com), write in **bold** or *italic*.
