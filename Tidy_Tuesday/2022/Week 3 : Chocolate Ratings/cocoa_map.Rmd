@@ -34,6 +34,9 @@ chocolate_raw %>%
 ```
 
 #### Map
+
+map projections: https://rstudio-pubs-static.s3.amazonaws.com/122915_0eeb3eb6bbfa4e8ca1838b633b8dc48f.html
+
 ```{r}
 library(rgeos)
 library(rworldmap)
@@ -80,18 +83,22 @@ library(ggrepel)
 
 plot_base <- 
 ggplot(data = cao_world) +
-  geom_sf(aes(fill = fill), color = "white", size = 0.15, alpha = 0.8) +
+  geom_sf(aes(fill = fill), color = "white", size = 0.15, alpha = 0.6) +
   geom_point(aes(size = n, color = avg_rating_cat, x = x, y = y)) +
   scale_size_continuous(range = c(1, 6)) +
   scale_fill_identity() +
   scale_color_manual(values = c("#C39B77", "#835345", "#693214", "#341c14"), na.translate = FALSE) +
+  guides(color = guide_legend(override.aes = list(size = 6))) +
   geom_text_repel(aes(label = label, x = x, y = y)) + 
-  labs(color = "Cocoa Rating\n(Average)",
-       size  = "Number of\nChocolate Bars") +
+  labs(color = "Average\nCocoa\nRating",
+       size  = "Number of\nChocolate\nBars") +
   coord_sf(crs = vdg_coord) + 
   theme_void() +
-  theme(legend.position = c(0.18, 0.45),
-        legend.title = element_text(face = "bold"))
+  theme(legend.position = c(0.20, 0.40),
+        legend.direction = "vertical", 
+        legend.box = "horizontal",
+        legend.margin = margin(0,-.05,0,-0.05, unit = "cm"),
+        legend.title = element_text(face = "bold", family = "rock", hjust = 0))
 
 ```
 
@@ -103,14 +110,16 @@ library(cowplot)
 ggdraw() +
   draw_plot(plot_base) +
   draw_text("The Mighty Cocoa Bean", family = "rock", size = 28,
-            x = 0.6, y = 0.39) 
+            x = 0.6, y = 0.39) +
+  draw_text("Data: FlavorsOfCocoa.com | Graphic: @NearAndDistant", family = "rock", size = 8,
+            x = 0.66, y = 0.35)
 
 ```
 
 #### Saving
 ```{r}
 
-ggsave(here::here(".png"), dpi = 360, height = 10, width = 15)
+ggsave(here::here("chocomap.png"), dpi = 360, height = 10, width = 12, bg = "white")
 
 ```
 
