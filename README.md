@@ -1,5 +1,10 @@
 # Data Science with R: Projects
 
+## US Bee Colonies: A Changing Picture
+[Code](https://github.com/NearAndDistant/data_science_with_r/tree/main/Tidy_Tuesday/2022/Week%202%20:%20Bee%20Loss)
+
+![bee_plot](https://user-images.githubusercontent.com/79040885/151707458-8a3f369a-cc2a-4118-a593-1e3ccffed99f.png)
+
 ## Degrees of Statecraft
 [Code](https://github.com/NearAndDistant/data_science_with_r/tree/main/Tidy_Tuesday/2022/Week%201%20:%20BYOD)
 
