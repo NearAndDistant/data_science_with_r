@@ -1,5 +1,10 @@
 # Data Science with R: Projects
 
+## The Mighty Cocoa Bean
+[Code](https://github.com/NearAndDistant/data_science_with_r/tree/main/Tidy_Tuesday/2022/Week%203%20:%20Chocolate%20Ratings)
+
+![chocomap](https://user-images.githubusercontent.com/79040885/152196024-9b965a8a-d84d-4cf8-a571-2b1a1ee2b2c9.png)
+
 ## US Bee Colonies: A Changing Picture
 [Code](https://github.com/NearAndDistant/data_science_with_r/tree/main/Tidy_Tuesday/2022/Week%202%20:%20Bee%20Loss)
 
