@@ -63,6 +63,7 @@ dogs_rank_long %>%
                                  attribute == "Coat Grooming Frequency"    ~ "Grooming",
                                  attribute == "Mental Stimulation Needs"   ~ "Stimulation",
                                  TRUE ~ attribute)) %>%
+    mutate(attribute = factor(attribute)) %>%
   ungroup() %>%
   group_by(breed) %>%
     arrange(desc(value)) %>%
@@ -100,12 +101,11 @@ library(cowplot)
 
 for(i in levels(dog_top_50$breed)) {
   
-breed_i <- i
+breed_i <- "Australian Shepherds"
 
 ggdraw(
 top_dogs %>%
 filter(breed == breed_i) %>%
-mutate(attribute = factor(attribute)) %>%
   ggplot() +
   geom_segment(data = data.frame(y=seq(0,5,1)), aes(x = -0.5, xend = 15, y=y, yend=y), linetype = "ff", color = "grey90") +
   geom_text(data = data.frame(y=seq(0,5,1)), aes(x = -0.15 , y = y + 0.5, label = y), family = "king", size = 6, fontface = "bold") + 
@@ -126,8 +126,88 @@ draw_text("Each a Good Boy, Each a Character",    x = 0.5 , y = 0.90, size = 25,
 draw_text("Traits: Strong (5) to Weak (0)",       x = 0.5 , y = 0.86, size = 18, family = "amatic") +
 draw_text("Data: AKC | Graphic: @NearAndDistant", x = 0.435 , y = 0.35, size = 8, family = "me_again", hjust = 0, color = "grey70")
   
-ggsave(here::here(paste0(breed_i, ".png")), dpi = 120, height = 10, width = 10, bg = "white")
+ggsave(here::here(paste0(breed_i, ".png")), dpi = 360, height = 10, width = 10, bg = "white")
 }
+
+```
+
+### Shiny App
+```{r}
+# create a directory for the Shiny application
+dir.create(here::here("app.R"))
+
+library(shiny)
+
+```
+
+#### UI
+```{r}
+
+# Define UI for Good Boys app
+ui <- 
+  
+fluidPage(
+  
+  # Sidebar panel for inputs
+  sidebarLayout(
+    
+    # Input: Selector for variable (breed) to plot 
+    sidebarPanel(width = 2,
+      selectInput("breed", "Breed:", choices = dogs_rank_long %>% arrange(breed) %>% distinct(breed)),
+      tags$style(".well {background-color:white; border: none; box-shadow: none; width: 300px}")
+    ),
+    
+    # Main panel for displaying outputs
+    mainPanel(width = 10, plotOutput("top_dogs"))
+    
+  )
+  
+)
+
+```
+
+#### Server
+```{r}
+# Define server logic to plot various breeds
+
+## Define server logic to plot 
+server <- 
+function(input, output) {
+  
+  filtered_input <- reactive({top_dogs %>% filter(breed == input$breed)})
+
+  # Generate a plot of the requested breed
+  output$top_dogs <- 
+  renderPlot({
+      ggdraw(
+        filtered_input() %>%
+          ggplot() +
+          geom_segment(data = data.frame(y=seq(0,5,1)), aes(x = -0.5, xend = 15, y=y, yend=y), linetype = "ff", color = "grey90") +
+          geom_text(data = data.frame(y=seq(0,5,1)), aes(x = -0.15 , y = y + 0.5, label = y), family = "king", size = 6, fontface = "bold") +
+          geom_col(aes(id, value, fill = fill), show.legend = FALSE) +
+          ggimage::geom_image(aes(x = -0.5, y = -5.5, image = image), size = 0.24) +
+          geom_text(aes(x = id, y = 7, label = attribute), size = 6, fontface = 'bold', family = "king") +
+          geom_text(aes(label = str_wrap(breed,20)), x = -0.5, y = -1.7, size = 6, fontface = 'bold', family = "amatic") +
+          scale_fill_identity() +
+          scale_y_continuous(limits = c(-5.5, 7), breaks = seq(0,5,1)) +
+          scale_x_continuous(limits = c(-0.5, max(dog_top_50$id)+1)) +
+          coord_polar(clip = "off") +
+          theme_void() +
+          theme(plot.margin = margin(1.5,0,0,0, unit = "cm"))
+      ) +
+      draw_text("Top Dogs",                             x = 0.5 , y = 0.95, size = 40, family = "amatic") + 
+      draw_text("Each a Good Boy, Each a Character",    x = 0.5 , y = 0.90, size = 25, family = "amatic") +
+      draw_text("Traits: Strong (5) to Weak (0)",       x = 0.5 , y = 0.86, size = 18, family = "amatic") +
+      draw_text("Data: AKC | Graphic: @NearAndDistant", x = 0.42 , y = 0.35, size = 12, family = "me_again", hjust = 0, color = "grey70")
+  }, height = 900, width = 900)
+}
+
+```
+
+```{r}
+
+# complete the app
+shinyApp(ui, server)
 
 ```
 
