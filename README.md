@@ -1,5 +1,13 @@
 # Data Science with R: Projects
 
+## Top Dogs
+[Code](https://github.com/NearAndDistant/data_science_with_r/tree/main/Tidy_Tuesday/2022/Week%205%20:%20Dog%20Breeds)
+
+All 195 examples in code and more than 30+ in above folder, 2 examples below:
+
+![Russell Terriers](https://user-images.githubusercontent.com/79040885/152645274-6133a7ab-211d-427b-8826-dc9452ab959d.png)
+![Staffordshire Bull Terriers](https://user-images.githubusercontent.com/79040885/152645279-dbd50cec-a391-4cec-98f9-84b03044587d.png)
+
 ## The Mighty Cocoa Bean
 [Code](https://github.com/NearAndDistant/data_science_with_r/tree/main/Tidy_Tuesday/2022/Week%203%20:%20Chocolate%20Ratings)
 
