@@ -1,0 +1,14 @@
+name: Dogs_of_the_Tidyverse
+title: Dogs_of_the_Tidyverse
+username:
+account: nearanddistant
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 5590545
+bundleId: 5552376
+url: https://nearanddistant.shinyapps.io/Dogs_of_the_Tidyverse/
+when: 1644244329.02475
+lastSyncTime: 1644244329.02476
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: individual_dogs_loop.Rmd|README.MD|top_dogs.Rmd|Outputs

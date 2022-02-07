@@ -1,22 +1,26 @@
+---
+title: "Individual Dogs"
+author: "NearAndDistant"
+date: "07/02/2022"
+output: html_document
+---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r, include=FALSE}
-### Shiny App : Input and UI
-
-# create a directory for the Shiny application
-#dir.create(here::here("app.R"))
-
-library(shiny)
 library(tidyverse)
 
 # import data for project
 breed_traits_raw      <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-02-01/breed_traits.csv')
+trait_description_raw <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-02-01/trait_description.csv')
 breed_rank_all_raw    <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-02-01/breed_rank.csv')
 
-### Clean and Wrangle 
+```
+
+```{r, include=FALSE} 
+# clean and wrangle 
 
 # dogs rank clean
 dogs_rank_long <- 
@@ -35,7 +39,10 @@ dogs_trait_long <-
   janitor::clean_names() %>%
   mutate(breed = str_squish(breed))
 
-# transform
+```
+
+```{r, include=FALSE}
+
 top_dogs <-
 dogs_rank_long %>%
   left_join(dogs_trait_long) %>%
@@ -72,81 +79,51 @@ dogs_rank_long %>%
                           attribute == "Shedding"       ~  "#633372",
                           attribute == "Drooling"       ~  "#1f6e9c"))
 
-
-#### UI
-
-# Define UI for Good Boys app
-ui <- 
-  
-fillPage(
-  
-  # Sidebar panel for inputs
-  sidebarLayout(
-    
-    # Input: Selector for variable (breed) to plot 
-    sidebarPanel(width = 1,
-      selectInput("breed", "Breed:", choices = dogs_rank_long %>% arrange(breed) %>% distinct(breed)),
-      tags$style(".well {background-color:white; border: none; box-shadow: none; width: 300px}")),
-    
-    # Main panel for displaying outputs
-    mainPanel(width = 11, plotOutput("top_dogs", height = "100%"))
-    
-  )
-  
-)
-
 ```
 
 ```{r, include=FALSE}
-#### Server
-
-library(shiny)
-library(cowplot)
 library(showtext); showtext_auto()
 
 font_add_google("Loved by the King", "king")
 font_add_google("Amatic SC", "amatic")
 font_add_google("Just Me Again Down Here", "me_again")
 
-# Define server logic to plot various breeds
-
-## Define server logic to plot 
-server <- 
-function(input, output) {
-  
-  filtered_input <- reactive({top_dogs %>% filter(breed == input$breed)})
-
-  # Generate a plot of the requested breed
-  output$top_dogs <- 
-  renderPlot({
-      ggdraw(
-        filtered_input() %>%
-          ggplot() +
-          geom_segment(data = data.frame(y=seq(0,5,1)), aes(x = -0.5, xend = 15, y=y, yend=y), linetype = "ff", color = "grey90") +
-          geom_text(data = data.frame(y=seq(0,5,1)), aes(x = -0.15 , y = y + 0.5, label = y), family = "king", size = 6, fontface = "bold") +
-          geom_col(aes(id, value, fill = fill), show.legend = FALSE) +
-          ggimage::geom_image(aes(x = -0.5, y = -5.5, image = image), size = 0.24) +
-          geom_text(aes(x = id, y = 7, label = attribute), size = 12, fontface = 'bold', family = "king") +
-          geom_text(aes(label = str_wrap(breed,20)), x = -0.5, y = -1.7, size = 8, fontface = 'bold', family = "amatic") +
-          scale_fill_identity() +
-          scale_y_continuous(limits = c(-5.5, 7), breaks = seq(0,5,1)) +
-          scale_x_continuous(limits = c(-0.5, max(top_dogs$id)+1)) +
-          coord_polar(clip = "off") +
-          theme_void() +
-          theme(plot.margin = margin(1.5,0,0,0, unit = "cm"))
-      ) +
-      draw_text("Dogs of the Tidyverse",                x = 0.5 , y = 0.95, size = 50, family = "amatic", fontface = "bold") + 
-      draw_text("Each a Good Boy, Each a Character",    x = 0.5 , y = 0.90, size = 30, family = "amatic") +
-      draw_text("Traits: Strong (5) to Weak (0)",       x = 0.5 , y = 0.86, size = 25, family = "amatic") +
-      draw_text("Data: AKC | Graphic: @NearAndDistant", x = 0.41 , y = 0.35, size = 16, family = "me_again", hjust = 0, color = "grey70")
-  }, height = 700, width = 700)
-}
-
 ```
 
-```{r, echo=FALSE}
 
-# complete the app
-shinyApp(ui, server, options = list(height = 800, width = 800))
+```{r, include=FALSE}
+### Individual Plots Loop
+
+library(cowplot)
+
+for(i in levels(top_dogs$breed)) {
+  
+breed_i <- "Poodles"
+
+ggdraw(
+top_dogs %>%
+filter(breed == breed_i) %>%
+  ggplot() +
+  geom_segment(data = data.frame(y=seq(0,5,1)), aes(x = -0.5, xend = 15, y=y, yend=y), linetype = "ff", color = "grey90") +
+  geom_text(data = data.frame(y=seq(0,5,1)), aes(x = -0.15 , y = y + 0.5, label = y), family = "king", size = 6, fontface = "bold") + 
+  geom_col(aes(id, value, fill = fill), show.legend = FALSE) +
+  ggimage::geom_image(aes(x = -0.5, y = -5.5, image = image), size = 0.24) +
+  geom_text(aes(x = id, y = 7, label = attribute), size = 6, fontface = 'bold', family = "king") +
+  geom_text(aes(label = str_wrap(breed,20)), x = -0.5, y = -1.7, size = 6, fontface = 'bold', family = "amatic") +
+  scale_fill_identity() +
+  scale_y_continuous(limits = c(-5.5, 7), breaks = seq(0,5,1)) +
+  scale_x_continuous(limits = c(-0.5, max(top_dogs$id)+1)) +
+  #facet_wrap(~breed, nrow = 5) +
+  coord_polar(clip = "off") +
+  theme_void() +
+  theme(plot.margin = margin(1.5,0,0,0, unit = "cm"))
+) +
+draw_text("Top Dogs",                             x = 0.5 , y = 0.95, size = 40, family = "amatic") + 
+draw_text("Each a Good Boy, Each a Character",    x = 0.5 , y = 0.90, size = 25, family = "amatic") +
+draw_text("Traits: Strong (5) to Weak (0)",       x = 0.5 , y = 0.86, size = 18, family = "amatic") +
+draw_text("Data: AKC | Graphic: @NearAndDistant", x = 0.435 , y = 0.35, size = 8, family = "me_again", hjust = 0, color = "grey70")
+  
+ggsave(here::here(paste0(breed_i, ".png")), dpi = 360, height = 10, width = 10, bg = "white")
+}
 
 ```
