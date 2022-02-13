@@ -54,7 +54,7 @@ us_tusks      <- left_join(us_states_abb, tusk_state_count) %>%
                  mutate(n = replace_na(n, replace = 0)) %>%
                  # cut
                  mutate(cut = cut(n, breaks = c(-Inf,1,25,50,75,Inf),
-                                     labels = c("LESS THAN\n1", "1-25", "26-50", "51-75", "76-102")))
+                                     labels = c("    LESS THAN\n1", "1-25", "26-50", "51-75", "76-102")))
 
 
 ## River System
@@ -86,11 +86,11 @@ map_dubois_tusk <-
   ggplot() +
   # polygons
   geom_polygon(data = us_tusks, aes(x = long, y = lat, fill = cut, group = group),
-               color = "grey30", linetype = "dotdash", alpha = 0.70, size = 0.2, show.legend = FALSE) +
-  scale_fill_manual(values = c("#e1b457", "#021f69", "#d32150", "#624025", "#141412")) +
+               color = "grey30", linetype = "dotdash", alpha = 0.80, size = 0.2, show.legend = FALSE) +
+  scale_fill_manual(values = c("#e1b457", "#021f69", "#d32150", "#624025", "black")) +
   # points
   geom_point(data = us_tusks, aes(x = long, y = lat, color = cut), alpha = 0) +
-  scale_color_manual(values = c("#e1b457", "#021f69", "#d32150", "#624025", "#141412")) +
+  scale_color_manual(values = c("#e1b457", "#021f69", "#d32150", "#624025", "black")) +
   guides(color = guide_legend(nrow = 1, override.aes = list(size = 8, alpha = 0.7),
                               title.position = "bottom", title.hjust = 0.5, title.vjust = -2, 
                               label.position = "bottom")) +
@@ -127,15 +127,14 @@ draw_text("DISTRIBUTION DES TUSKEGEE AIRMEN DAN LES ETATS UNIS", family = "coda"
 library(pBrackets)
 
 dubois_tusk
-grid.locator(unit="native")
-grid.brackets(300,300,130,400,lwd=0.2,ticks=0.54,h=.030,curvature=0.20,col="grey60",type=5)
+grid.brackets(250,88,120,88,lwd=0.3,ticks=0.46,h=.042,curvature=0.20,col="grey60",type=5)
 
 ```
 
 #### Saving
 ```{r}
 
-ggsave(here::here(".png"), dpi = 360, height = 10, width = 15)
+ggsave(here::here("tuskegee_airmen.png"), dpi = 360, height = 10, width = 15)
 
 ```
 
