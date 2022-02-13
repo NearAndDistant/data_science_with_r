@@ -106,7 +106,7 @@ map_dubois_tusk <-
         legend.text      = element_text(family = "rajdhani"),
         legend.spacing.x = unit(2, "cm"),
         plot.background  = element_rect(fill = "#dfcebe", color = "#d5d4d0", size = 8),
-        plot.margin      = margin(8,-4.5,0,-4, unit = "cm"))
+        plot.margin      = margin(8,-3.2,0,-2.5, unit = "cm"))
 
 ```
 
@@ -116,18 +116,20 @@ library(cowplot)
 
 # finalise panel with layered plotting or annotation
 dubois_tusk <-
-ggdraw() +
+ggdraw(c(0.4,0.6)) +
 draw_plot(map_dubois_tusk) +
-draw_text("DISTRIBUTION OF THE TUSKEGEE AIRMEN IN THE UNITED STATES", family = "teko", fontface = "bold", size = 20, color = "grey25", 
+draw_text("DISTRIBUTION OF THE TUSKEGEE AIRMEN IN THE UNITED STATES.", family = "teko", fontface = "bold", size = 18, color = "grey25", 
           x = 0.5, y = 0.96) +
-draw_text("DISTRIBUTION DES TUSKEGEE AIRMEN DAN LES ETATS UNIS", family = "coda", size = 12, color = "grey25", 
-          x = 0.5, y = 0.93)
+draw_text("DISTRIBUTION DES TUSKEGEE AIRMEN DAN LES ETATS UNIS", family = "coda", size = 10, color = "grey25", 
+          x = 0.5, y = 0.93) +
+draw_text("Data: Commemorative Airforce (CAF)\nGraphic: @NearAndDistant", family = "coda", size = 6, color = "grey42", 
+          x = 0.51, y = 0.06, hjust = 0)
 
 ###Add grid bracket
 library(pBrackets)
 
 dubois_tusk
-grid.brackets(250,88,120,88,lwd=0.3,ticks=0.46,h=.042,curvature=0.20,col="grey60",type=5)
+grid.brackets(200,115,55,115,lwd=0.3,ticks=0.47,h=.042,curvature=0.20,col="grey60",type=5)
 
 ```
 
