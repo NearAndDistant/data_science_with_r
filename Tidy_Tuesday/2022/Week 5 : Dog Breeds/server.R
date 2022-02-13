@@ -2,15 +2,12 @@
 
 library(shiny)
 library(tidyverse)
-library(cowplot)
-library(showtext); showtext_auto()
-
-font_add_google("Loved by the King", "king")
-font_add_google("Amatic SC", "amatic")
-font_add_google("Just Me Again Down Here", "me_again")
 
 # import data for project
+
+# for traits
 breed_traits_raw      <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-02-01/breed_traits.csv')
+# for images
 breed_rank_all_raw    <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-02-01/breed_rank.csv')
 
 ### Clean and Wrangle 
@@ -53,7 +50,7 @@ top_dogs <-
   group_by(breed) %>%
   arrange(desc(value)) %>%
   mutate(id = row_number()) %>%
-  ungroup() %>% #2 Pissaro #1 Signac
+  ungroup() %>% #1 Signac
   mutate(fill = case_when(attribute == "Affectionate"   ~  "#fbe183",
                           attribute == "Child-Friendly" ~  "#2b9b81",
                           attribute == "Combativeness"  ~  "#d8443c",
@@ -70,6 +67,12 @@ top_dogs <-
                           attribute == "Drooling"       ~  "#1f6e9c"))
 
 # Define server logic to plot various breeds
+library(cowplot)
+library(showtext); showtext_auto()
+
+font_add_google("Loved by the King", "king")
+font_add_google("Amatic SC", "amatic")
+font_add_google("Just Me Again Down Here", "me_again")
 
 ## Define server logic to plot 
 server <- function(input, output) {
@@ -100,4 +103,4 @@ server <- function(input, output) {
                 draw_text("Traits: Strong (5) to Weak (0)",       x = 0.5 , y = 0.86, size = 25, family = "amatic") +
                 draw_text("Data: AKC | Graphic: @NearAndDistant", x = 0.41 , y = 0.35, size = 16, family = "me_again", hjust = 0, color = "grey70")
             }, height = 800, width = 800)
-          }
+}

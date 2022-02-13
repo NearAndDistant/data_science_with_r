@@ -1,0 +1,148 @@
+---
+title: "Tidy Template"
+author: "NearAndDistant"
+date: "29/09/2021"
+output: html_document
+---
+
+#### Setup & Import
+```{r}
+library(tidyverse)
+
+# create driectory for new project
+dir.create(here::here("Week 6 : Tuskegee Airmen"))
+# import data for project
+tusk_raw <- read.csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-02-08/airmen.csv")
+
+```
+
+#### Clean & Wrangle
+```{r}
+library(lubridate)
+
+tusk_cln <-
+tusk_raw %>%
+  # dates
+  mutate(graduation_date = str_extract(graduation_date, "^.*(?=T)")) %>%
+  mutate(graduation_date = as_date(graduation_date)) %>%
+  # typos
+  mutate(pilot_type = if_else(pilot_type == "Liaison pilot", "Liason pilot", pilot_type)) %>%
+  rename(abb = "state") %>%
+  # for joining to lat/long cities
+  mutate(city_state = if_else(is.na(military_hometown_of_record), NA_character_ , paste0(str_to_title(military_hometown_of_record), " ", abb)))
+
+# tusk states
+tusk_state_count <-
+tusk_cln %>%
+  count(abb)
+
+```
+
+```{r}
+library(maps)
+
+## States
+
+# import polygon data for us states
+us_states     <- map_data("state") %>% rename("state" = region) %>% mutate(state = str_to_title(state))
+us_states_abb <- us_states %>% 
+                 mutate(abb = usdata::state2abbr(state))
+                                
+library(rgdal)
+# join polygons with tusk data
+us_tusks      <- left_join(us_states_abb, tusk_state_count) %>%
+                 mutate(n = replace_na(n, replace = 0)) %>%
+                 # cut
+                 mutate(cut = cut(n, breaks = c(-Inf,1,25,50,75,Inf),
+                                     labels = c("LESS THAN\n1", "1-25", "26-50", "51-75", "76-102")))
+
+
+## River System
+library(rnaturalearth)
+library(sf)
+
+
+rivers_raw    <- ne_download(scale = "large", type = 'rivers_lake_centerlines', category = 'physical', returnclass = "sf")
+
+# bbox to st_cast filter geometry and pull out most of US rivers (reference only - use for filtered names)
+rivers_flt      <- st_crop(st_as_sf(rivers_raw), xmin = -126, xmax = -64, ymin = 24, ymax = 45) %>% 
+                   filter(!is.na(name) & name != "Ottawa" & name != "Saint John" & name != "Winnipeg" & name != "R. des Outaouais" & name != "Rainy") 
+
+us_rivers       <- rivers_flt %>% 
+                   filter(name %in% c("Columbia", "Colorado", "Missouri", "Arkansas", "Red", "Snake" , "Mississipi", "Sacremento", "Rio Grande", "Tennessee", "Ohio"))
+ 
+us_riv_coord    <- us_rivers %>% st_cast("MULTILINESTRING") %>% st_coordinates() %>% as_tibble() %>% mutate(group = paste0(L1, "-", L2))
+
+```
+
+#### Plotting
+```{r, fig.align="center", fig.width=6, fig.height=6, fig.cap="Figure: Here is a really important caption."}
+library(showtext); showtext_auto()
+font_add_google("Rajdhani", "rajdhani")
+font_add_google("Coda", "coda")
+font_add_google("Teko", "teko")
+
+map_dubois_tusk <-
+  ggplot() +
+  # polygons
+  geom_polygon(data = us_tusks, aes(x = long, y = lat, fill = cut, group = group),
+               color = "grey30", linetype = "dotdash", alpha = 0.70, size = 0.2, show.legend = FALSE) +
+  scale_fill_manual(values = c("#e1b457", "#021f69", "#d32150", "#624025", "#141412")) +
+  # points
+  geom_point(data = us_tusks, aes(x = long, y = lat, color = cut), alpha = 0) +
+  scale_color_manual(values = c("#e1b457", "#021f69", "#d32150", "#624025", "#141412")) +
+  guides(color = guide_legend(nrow = 1, override.aes = list(size = 8, alpha = 0.7),
+                              title.position = "bottom", title.hjust = 0.5, title.vjust = -2, 
+                              label.position = "bottom")) +
+  # rivers
+  # https://stackoverflow.com/questions/51333546/how-to-plot-rivers-efficiently
+  geom_path(data = us_riv_coord, aes(x = X, y = Y, group = group), color = "grey25", size = 0.3) +
+  coord_map(projection = "albers", lat0 = 39, lat1 = 45) +
+  labs(color = "TUSKEGEE AIRMEN PER STATE") +
+  theme_void() +
+  theme(legend.position  = c(0.50,1.15),
+        legend.direction = "horizontal",
+        legend.title     = element_text(family = "rajdhani"),
+        legend.text      = element_text(family = "rajdhani"),
+        legend.spacing.x = unit(2, "cm"),
+        plot.background  = element_rect(fill = "#dfcebe", color = "#d5d4d0", size = 8),
+        plot.margin      = margin(8,-4.5,0,-4, unit = "cm"))
+
+```
+
+#### Panel
+```{r}
+library(cowplot)
+
+# finalise panel with layered plotting or annotation
+dubois_tusk <-
+ggdraw() +
+draw_plot(map_dubois_tusk) +
+draw_text("DISTRIBUTION OF THE TUSKEGEE AIRMEN IN THE UNITED STATES", family = "teko", fontface = "bold", size = 20, color = "grey25", 
+          x = 0.5, y = 0.96) +
+draw_text("DISTRIBUTION DES TUSKEGEE AIRMEN DAN LES ETATS UNIS", family = "coda", size = 12, color = "grey25", 
+          x = 0.5, y = 0.93)
+
+###Add grid bracket
+library(pBrackets)
+
+dubois_tusk
+grid.locator(unit="native")
+grid.brackets(300,300,130,400,lwd=0.2,ticks=0.54,h=.030,curvature=0.20,col="grey60",type=5)
+
+```
+
+#### Saving
+```{r}
+
+ggsave(here::here(".png"), dpi = 360, height = 10, width = 15)
+
+```
+
+***
+
+R markdown allows to easily format your text. You can add [links](www.r-graph-gallery.com), write in **bold** or *italic*.
+
+Further formatting can be found [here](https://holtzy.github.io/Pimp-my-rmd/)
+
+***

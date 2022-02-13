@@ -98,7 +98,7 @@ library(cowplot)
 
 for(i in levels(top_dogs$breed)) {
   
-breed_i <- "Poodles"
+breed_i <- "German Shepherd Dogs"
 
 ggdraw(
 top_dogs %>%
