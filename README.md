@@ -1,5 +1,11 @@
 # Data Science with R: Projects
 
+# Tuskegee Airmen
+[Code](https://github.com/NearAndDistant/data_science_with_r/blob/main/Tidy_Tuesday/2022/Week%206%20:%20Tuskegee%20Airmen/dubois_tusk_airmen.Rmd)
+
+![dubois_tuskegee](https://user-images.githubusercontent.com/79040885/153745675-cea38dd3-cdbb-4851-b658-4759ec724d2f.png)
+![original_dubois_distribution_of_negroes_us_1900](https://user-images.githubusercontent.com/79040885/153745677-d2f61de8-5aa3-4d1f-9466-42271574f4d8.jpeg)
+
 ## Top Dogs
 [Code](https://github.com/NearAndDistant/data_science_with_r/tree/main/Tidy_Tuesday/2022/Week%205%20:%20Dog%20Breeds)
 
