@@ -140,6 +140,16 @@ ggsave(here::here("tuskegee_airmen.png"), dpi = 360, height = 10, width = 15)
 
 ```
 
+```{r}
+# side by side
+
+ggdraw() +
+  draw_image(here::here("Week 6 : Tuskegee Airmen/dubois_tuskegee.png"), x = 0.01, width = 0.47) +
+  draw_image(here::here("Week 6 : Tuskegee Airmen/original_dubois_distribution_of_negroes_us_1900.jpeg"), x =  0.48, width = 0.5)
+
+```
+
+
 ***
 
 R markdown allows to easily format your text. You can add [links](www.r-graph-gallery.com), write in **bold** or *italic*.
