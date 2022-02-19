@@ -1,10 +1,16 @@
 # Data Science with R: Projects
 
+# WEB Du Bois Challenge 2022
+
+[Code]()
+
+![web_du_bois_side_by_side](https://user-images.githubusercontent.com/79040885/154799088-c84b2342-5609-4ba6-b978-7fb15201ad7c.jpeg)
+
 # Tuskegee Airmen
+Recreation: Left | Original: Right
 [Code](https://github.com/NearAndDistant/data_science_with_r/blob/main/Tidy_Tuesday/2022/Week%206%20:%20Tuskegee%20Airmen/dubois_tusk_airmen.Rmd)
 
-![dubois_tuskegee](https://user-images.githubusercontent.com/79040885/153745675-cea38dd3-cdbb-4851-b658-4759ec724d2f.png)
-![original_dubois_distribution_of_negroes_us_1900](https://user-images.githubusercontent.com/79040885/153745677-d2f61de8-5aa3-4d1f-9466-42271574f4d8.jpeg)
+<img width="1397" alt="Screenshot 2022-02-19 at 11 30 47" src="https://user-images.githubusercontent.com/79040885/154799019-2a64168f-fc23-4156-85f9-8e9f8bd2bf1a.png">
 
 ## Top Dogs
 [Code](https://github.com/NearAndDistant/data_science_with_r/tree/main/Tidy_Tuesday/2022/Week%205%20:%20Dog%20Breeds)
