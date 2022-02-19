@@ -2,6 +2,7 @@
 
 # WEB Du Bois Challenge 2022
 
+Recreation: Left | Original: Right
 [Code]()
 
 ![web_du_bois_side_by_side](https://user-images.githubusercontent.com/79040885/154799088-c84b2342-5609-4ba6-b978-7fb15201ad7c.jpeg)
