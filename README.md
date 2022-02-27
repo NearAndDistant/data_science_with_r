@@ -1,6 +1,11 @@
 # Data Science with R: Projects
 
-# WEB Du Bois Challenge 2022
+## Democracy in Crisis
+[Code](https://github.com/NearAndDistant/data_science_with_r/blob/main/Tidy_Tuesday/2022/Week%208%20:%20Democracy%20in%20Crisis/Democracy%20in%20Crisis.Rmd)
+
+![russia](https://user-images.githubusercontent.com/79040885/155893068-a425fb2f-8d9c-4f43-8c17-27e0cedbeb59.png)
+
+## WEB Du Bois Challenge 2022
 
 Recreation: Left | Original: Right
 [Code](https://github.com/NearAndDistant/data_science_with_r/blob/main/Tidy_Tuesday/2022/Week%207%20:%20WEB%20Du%20Bois%20Challenge%202022/property_value.Rmd)
