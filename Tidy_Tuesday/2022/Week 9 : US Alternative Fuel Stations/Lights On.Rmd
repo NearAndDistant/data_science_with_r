@@ -1,0 +1,146 @@
+---
+title: "Tidy Template"
+author: "NearAndDistant"
+date: "29/09/2021"
+output: html_document
+---
+
+##  Alternative Fuel Stations
+
+#### Setup & Import
+```{r}
+library(tidyverse)
+
+# create driectory for new project
+# dir.create(here::here("Week 9 : US Alternative Fuel Stations"))
+
+# import data for project
+stations_raw <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-03-01/stations.csv')
+
+```
+
+#### Clean & Wrangle
+```{r}
+
+stations <-
+stations_raw %>%
+  janitor::clean_names() %>%
+  mutate(year = substr(open_date, start = 1, stop = 4)) %>% 
+  select(year, state, city, station_name, lat = latitude, long = longitude, fuel_type_code) %>%
+  # remove non-contiguous states
+  filter(long > -125 & long != 0) %>%
+  filter(lat  > 24) %>%
+  # round stations for the map
+  mutate(lat_round  = round(lat),
+         long_round = round(long),
+         link       = paste0(lat_round, ":", long_round))
+
+```
+
+#### Plotting
+
+Tutorial: https://taraskaduk.com/posts/2017-11-26-pixel-maps/
+          https://dadascience.design/post/r-pixel-symbol-map-magic-with-ggplot/
+          
+# Palette
+```{r}
+library(showtext); showtext_auto()
+font_add_google("Orbitron", "tron")
+
+bg <- "#21242b" #blue: #0b2d52 ; grey: #212121
+
+```
+
+```{r, fig.align="center", fig.width=6, fig.height=6, fig.cap="Figure: Here is a really important caption."}
+library(tidyverse)
+library(maps)
+
+# prep work
+lat  <- tibble(lat  = seq( -90,  90, by = 1))
+long <- tibble(long = seq(-180, 180, by = 1))
+
+dots_raw <- lat %>% merge(long, all = TRUE)
+
+dots <- 
+dots_raw %>% 
+  mutate(country = map.where('world', long, lat),
+         lakes   = map.where('lakes', long, lat)) %>% 
+  filter(!is.na(country) & is.na(lakes)) %>% 
+  filter(str_detect(country, "USA")) %>%
+  filter(!str_detect(country, "Alaska")) %>%
+  select(-lakes) %>%
+  # create a link to join to
+  mutate(link = paste0(lat, ":", long))
+
+```
+
+```{r}
+
+stations_n <- 
+  stations %>% 
+  filter(fuel_type_code == "ELEC") %>%
+  count(link)
+
+# joining
+stations_j <- dots %>% left_join(stations_n)
+
+```
+
+```{r}
+
+map_lights <-
+stations_j %>% 
+ggplot() +   
+  geom_point(aes(x = long, y = lat, color = n), size  = 4.5) + 
+  scale_color_viridis_c(option = "cividis", trans = "pseudo_log", na.value = "grey60",
+                        breaks = c(1, 100, 1000, 2000, 4726), labels = scales::comma_format()) +
+  labs(color = NULL) +
+  coord_map(projection = "stereographic") + # "albers", lat0 = 39, lat1 = 45
+  theme_void() +
+  theme(legend.position   = c(0.53,0.90),
+        legend.text       = element_text(color = "white", family = "tron"),
+        legend.direction  = "horizontal",
+        legend.key.width  = unit(3, units = "cm"),
+        legend.key.height = unit(0.2, units = "cm"),
+        panel.background  = element_rect(fill = bg, color = bg),
+        plot.background   = element_rect(fill = bg, color = bg),
+        plot.margin       = margin(3,0,1,0, unit = "cm"))
+
+```
+
+#### Panel
+```{r}
+library(cowplot)
+
+# main text
+txt <- 
+str_wrap("More than 250 million vehicles consume millions of barrels of petroleum every day in the United States. On-road passenger travel alone accounts for more than 2.5 trillion vehicle miles traveled each year.", 16)
+
+txt2 <-
+str_wrap("This graphic shows the coordinate distribution of electric stations across the USA.", 15)
+
+# finalise panel with layered plotting or annotation
+panel_lights <-
+ggdraw(xlim = c(0.15,0.90)) +
+  draw_plot(map_lights) +
+  draw_text("Alternative Fuels: Electric Stations", x = 0.38, y = 0.83, family = "tron", hjust = 0, color = "white", size = 22) +
+  draw_text(txt,  x = 0.80, y = 0.35, family = "tron", hjust = 1, color = "white", size = 10) + 
+  draw_text(txt2, x = 0.80, y = 0.62, family = "tron", hjust = 1, color = "white", size = 10) + 
+  draw_text("Data: US Dot | Graphic: @NearAndDistant", x = 0.50, y = 0.13, family = "tron", hjust = 0, color = "white", size = 10)
+
+```
+
+#### Saving
+```{r}
+
+ggsave(here::here("Week 9 : US Alternative Fuel Stations/alt_energy_cividis.png"), dpi = 360, height = 10, width = 15)
+
+```
+
+***
+
+R markdown allows to easily format your text. You can add [links](www.r-graph-gallery.com), write in **bold** or *italic*.
+
+Further formatting can be found [here](https://holtzy.github.io/Pimp-my-rmd/)
+
+***
