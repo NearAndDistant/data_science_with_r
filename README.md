@@ -1,5 +1,10 @@
 # Data Science with R: Projects
 
+## Alternative Fuel
+[Code](https://github.com/NearAndDistant/data_science_with_r/blob/main/Tidy_Tuesday/2022/Week%209%20:%20US%20Alternative%20Fuel%20Stations/Lights%20On.Rmd)
+
+![alt_energy](https://user-images.githubusercontent.com/79040885/156926599-08d3b886-0491-4d22-a6a0-11d1133978db.png)
+
 ## Democracy in Crisis
 [Code](https://github.com/NearAndDistant/data_science_with_r/blob/main/Tidy_Tuesday/2022/Week%208%20:%20Democracy%20in%20Crisis/Democracy%20in%20Crisis.Rmd)
 
