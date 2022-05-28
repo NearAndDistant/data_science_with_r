@@ -1,0 +1,151 @@
+---
+title: "Tidy Template"
+author: "NearAndDistant"
+date: "29/09/2021"
+output: html_document
+---
+
+## Bee Loss
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#### Setup & Import
+```{r}
+library(tidyverse)
+
+# import data for project
+bee_raw <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-01-11/colony.csv')
+
+```
+
+#### Clean & Wrangle
+```{r}
+bee_cln <- 
+  bee_raw %>% 
+  #filter(year != "6/" & state != "United States") %>%
+  filter(year %in% c(2015, 2021)) %>%
+  mutate(quarter = case_when(months == "January-March"    ~ "Q1",
+                             months == "April-June"       ~ "Q2",
+                             months == "July-September"   ~ "Q3",
+                             months == "October-December" ~ "Q4")) %>%
+  select(year, quarter, state, colony_n, colony_lost, colony_added) %>%
+  filter(year == 2015 & quarter == "Q1" |
+         year == 2021 & quarter == "Q2")
+```
+
+```{r}
+
+#### Palette
+library(showtext); showtext_auto()
+font_add_google("Lobster", "lobster")
+font_add_google("Rajdhani", "raj")
+font_add_google("Fjalla One", "one")
+
+# wider for calculations
+bee_wide <-
+  bee_cln %>%
+  pivot_wider(id_cols = c(quarter, state), names_from = quarter, values_from = colony_n) %>%
+  rename("2015_Q1" = Q1, "2021_Q2" = Q2) %>%
+  mutate(net_loss_gain = `2021_Q2` - `2015_Q1`) %>%
+  mutate(pc_loss_gain  = net_loss_gain/`2015_Q1`) %>%
+  arrange(pc_loss_gain) %>%
+  mutate(fill = case_when(pc_loss_gain < -0.5 ~ "#2A2E34",
+                          pc_loss_gain <  0   & pc_loss_gain >-0.5 ~ "#3B3F46",
+                          pc_loss_gain >= 0   & pc_loss_gain <1    ~ "#DD7802",
+                          pc_loss_gain >= 1   & pc_loss_gain <2    ~ "#f5a302",
+                          pc_loss_gain >= 2   & pc_loss_gain <3    ~ "#f4b301",
+                          pc_loss_gain >= 3   ~ "#fed154")) %>%
+  mutate(label    = paste0(state, " (", scales::comma(net_loss_gain), ")"),
+         text_y   = row_number(),
+         text_x   = pc_loss_gain * 1.02,
+         text_hj  = if_else(pc_loss_gain < 0, 1, 0),
+         text_fam = if_else(state == "United States", "one", "raj"))
+
+```
+
+#### Analysis
+```{r}
+
+plot_bee_wide <-
+bee_wide %>%
+ggplot() +
+  geom_col(aes(pc_loss_gain, reorder(state, pc_loss_gain), fill = fill)) +
+  geom_text(aes(x = text_x, y = text_y, hjust = text_hj, label = label, family = text_fam)) +
+  scale_x_continuous(labels = scales::percent_format(), breaks = seq(-1,4,1)) +
+scale_fill_identity() +
+coord_cartesian(clip = "off", xlim = c(-1,4)) +
+theme_minimal() +
+theme(legend.position = "none",
+      panel.grid  = element_blank(),
+      axis.title  = element_blank(),
+      axis.text.y = element_blank(),
+      axis.text.x = element_text(vjust = -1, size = 14, face = "bold", family = "raj"),
+      plot.margin = margin(3,2,1,3, unit = "cm"))
+  
+```
+
+#### Plotting
+```{r, fig.align="center", fig.width=6, fig.height=6, fig.cap="Figure: Here is a really important caption."}
+ggplot2::theme_set(theme_minimal())
+
+library(maps)
+
+us_states  <- map_data("state") %>% rename("state" = region) %>% mutate(state = str_to_title(state))
+bee_states <- left_join(us_states, bee_wide)
+
+plot_map_bee <-
+ggplot(data = bee_states, aes(x = long, y = lat, fill = fill, group = group)) +
+  geom_polygon(color = "black") +
+  scale_fill_identity() +
+  coord_map(projection = "albers", lat0 = 39, lat1 = 45) +
+  labs(fill = "% Bee Colonies Loss / Gain") +
+  theme_void() +
+  theme(legend.position = "none",
+        #legend.position = c(0.85,0.25),
+        #legend.key.width  = unit(2, "cm"),
+        #legend.title = element_text(face = "bold")
+        )
+
+```
+
+#### Panel
+```{r}
+library(cowplot)
+
+bee_png <- here::here("bee_png.png")
+
+# finalise panel with layered plotting or annotation
+#final_bee_plot <-
+ggdraw() +
+  draw_plot(plot_bee_wide) +
+  draw_plot(plot_map_bee, 
+            height = 0.7, width = 0.7,
+            x = 0.35, y = 0) +
+  draw_text("US Bee Colonies: A Changing Picture", family = "lobster",
+            x = 0.27, y = 0.94, hjust = 0, size = 40) +
+  draw_text("Changes within States from Q1 2015 to Q2 2021 (showing absolute colony change in brackets)", family = "raj",
+            x = 0.2775, y = 0.895, hjust = 0, size = 20) +
+  draw_text("Data: USDA\nGraphic: @NearAndDistant", family = "raj",
+            x = 0.165, y = 0.525, hjust = 1, size = 9) +
+  draw_image(bee_png,
+             height = 0.25, width = 0.25,
+             x = -0.025, y = 0.5)
+
+```
+
+#### Saving
+```{r}
+
+ggsave(here::here("bee_plot.png"), dpi = 360, height = 10, width = 16, bg = "white")
+
+```
+
+***
+
+R markdown allows to easily format your text. You can add [links](www.r-graph-gallery.com), write in **bold** or *italic*.
+
+Further formatting can be found [here](https://holtzy.github.io/Pimp-my-rmd/)
+
+***
