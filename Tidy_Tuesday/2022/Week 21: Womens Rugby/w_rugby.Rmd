@@ -1,0 +1,184 @@
+---
+title: "Tidy Template"
+author: "NearAndDistant"
+date: "29/09/2021"
+output: html_document
+---
+
+##  Women's Rugby
+
+#### Setup & Import
+```{r}
+library(tidyverse)
+
+# create driectory for new project
+dir.create(here::here("Week 21: Womens Rugby"))
+
+# import data for project
+sevens   <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-05-24/sevens.csv')
+
+```
+
+#### WORDCLOUD BACKGROUND
+```{r}
+library(wordcloud2)
+
+scales::show_col(nord::nord(palette = "lumina", 6))
+palette <- nord::nord(palette = "lumina", 6) # mountain_forms
+
+### wordcloud of teams and venues
+plot_wordcloud <-
+  sevens %>% 
+    select(team_1, team_2, venue) %>% 
+    pivot_longer(cols = c(team_1, team_2, venue)) %>% 
+    count(value) %>%
+      wordcloud2(color = rep_len(palette, nrow(.)),
+                 size = 0.9,
+                 backgroundColor = "000000",
+                 minSize = 0.3,
+                 fontFamily = "Alte Haas Grotesk",
+                 rotateRatio = 0.3,
+                 widgetsize = c(860,860),
+                 figPath = here::here("Week 21: Womens Rugby/woman_rugby_silhouette.png"))
+
+### Webshot
+webshot::is_phantomjs_installed()
+htmlwidgets::saveWidget(plot_wordcloud, "1.html", selfcontained = FALSE)
+
+webshot2::webshot(url      = "1.html",
+                  file     = "Week 21: Womens Rugby/w21bgp.png", 
+                  delay    = 10, 
+                  vwidth   = 1200, 
+                  vheight  = 800,
+                  selector = '#canvas')
+
+# this doesn't always work (producing a blank square), in this case save directly.
+
+```
+
+```{r}
+
+sevens_tm <-
+sevens %>%
+  filter(stage != "Exhibition") %>%
+  mutate(year = lubridate::year(date)) %>%
+  select(year, tournament, team_1, score_1, team_2, score_2) %>%
+  pivot_longer(cols = c(team_1:score_2), 
+               names_to = c(".value", "item"), 
+               names_sep = "_") %>%
+  select(-item) %>%
+  mutate(score = as.numeric(score)) %>%
+  group_by(year, tournament, team) %>%
+  summarise(points = sum(score)) %>%
+  ungroup() %>%
+  filter(points > 0,
+         !is.na(points))
+
+### winners list
+sevens_winners <- 
+sevens %>%
+  filter(stage != "Exhibition") %>%
+  mutate(year = lubridate::year(date)) %>%
+  mutate(final_winner = if_else(stage == "Final", winner, NA_character_)) %>%
+  select(year, tournament, final_winner) %>%
+  filter(!is.na(final_winner))
+
+### joining
+sevens_tmj <- 
+  sevens_tm %>%
+  left_join(sevens_winners, by = c("year", "tournament")) %>%
+  mutate(final_winner = if_else(team == final_winner, final_winner, NA_character_)) %>%
+  filter(year >= 2000,
+         year < 2022) 
+
+```
+
+### STAMINA
+```{r}
+
+### transformations
+sevens_stamina <-
+sevens %>%
+  mutate(year = lubridate::year(date)) %>%
+  select(row_id, year, tournament, team_1, score_1, team_2, score_2) %>%
+  pivot_longer(cols = c(team_1:score_2), 
+               names_to = c(".value", "item"), 
+               names_sep = "_") %>%
+  select(-item) %>%
+  # some rows have no row_id or have "W" or "L"
+  filter(!is.na(row_id), score != "W", score != "L") %>%
+  arrange(row_id) %>%
+  # some rows have an uncertain score (?)
+  filter(score != "?") %>%
+  mutate(score = as.numeric(score)) %>%
+  group_by(year, tournament, team) %>%
+  mutate(game_n = row_number()) %>%
+  ungroup() %>%
+  group_by(game_n, team) %>%
+  summarise(avg = mean(score)) %>%
+  ungroup()
+
+### grey all other teams: https://yutani.rbind.io/post/2017-10-06-gghighlight/
+flt <- sevens_tmj %>% count(final_winner) %>% filter(!is.na(final_winner)) %>% filter(n > 10)
+win_teams  <- sevens_stamina %>% filter(team %in% flt$final_winner)
+
+### plot
+library(showtext); showtext_auto()
+font.add.google("Bebas Neue", "bebas")
+font.add.google("Roboto", "robo")
+
+plot_stamina <-
+ggplot() +
+  geom_smooth(data = sevens_stamina, aes(game_n, avg, group = team), 
+              se = FALSE, show.legend = FALSE, color = "grey90", alpha = 0.8) +
+  geom_smooth(data = win_teams, aes(game_n, avg, color = team), 
+              se = FALSE, size = 2) +
+  labs(x = "Game Number (Within Each Tournament)", 
+       y = "Score (Avg)",
+       color = NULL) +
+  #scale_color_viridis_d(option = "mako") +
+  nord::scale_color_nord(palette = "lumina") +
+  scale_x_continuous(expand = c(0,0)) +
+  scale_y_continuous(expand = c(0,0), limits = c(0,70)) +
+  theme_classic() +
+  theme(
+    legend.text = element_text(family = "bebas", hjust = 0, size = 12),
+    legend.position = c(1.06, 0.585),
+    axis.title.x = element_text(vjust = -4, color = "grey50"),
+    axis.title.y = element_text(vjust =  4, color = "grey50"),
+    panel.grid = element_blank(),
+    panel.grid.major.y = element_line(color = "grey70", size = 0.15),
+    axis.ticks = element_blank(),
+    plot.margin = margin(3,3.5,1,1, unit = "cm")
+  )
+
+```
+
+```{r}
+library(cowplot)
+
+plot_final <- 
+ggdraw() +
+  draw_plot(plot_stamina) +
+  draw_image(here::here("Week 21: Womens Rugby/wrugbyclip.png"), 
+             height = 0.1, width = 0.1, 
+             x = 0.37, y = 0.54) + # y = 0.7675
+  draw_text("Consistency is Key", size = 80, hjust = 0, family = "bebas", 
+            x = 0.45, y = 0.58) + # y = 0.81
+  draw_text("Using Women's Rugby data from 1997 to 2021 we see it's not 'go big or go home'\n, tournament winning teams have consistent scores across games.", 
+            hjust = 1, size = 12, x = 0.90, y = 0.50, family = "robo") +
+  draw_text("Graphic: @NearAndDistant | Data: ScrumQueens", size = 12, hjust = 0, family = "bebas",
+            x = 0.72, y = 0.10)
+
+### saving
+ggsave(plot = plot_final, here::here("Week 21: Womens Rugby/stamina.png"), bg = "white", dpi = 360, height = 10, width = 15)
+
+```
+
+***
+
+R markdown allows to easily format your text. You can add [links](www.r-graph-gallery.com), write in **bold** or *italic*.
+
+Further formatting can be found [here](https://holtzy.github.io/Pimp-my-rmd/)
+
+***
