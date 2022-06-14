@@ -1,30 +1,37 @@
 # Data Science with R: Projects
 
+## Women's Rugby
+[Code](https://github.com/NearAndDistant/data_science_with_r/tree/main/Tidy_Tuesday/2022/Week%2021:%20Womens%20Rugby)
+
+![stamina](https://user-images.githubusercontent.com/79040885/170830211-b80ac734-50ad-42eb-b7bc-65b1af260e9b.png)
+<img width="859" alt="w21bgp" src="https://user-images.githubusercontent.com/79040885/170830215-3b13c0ef-d3d0-45e9-a303-7222287a2ff5.png">
+
+
 ## Alternative Fuel
-[Code](https://github.com/NearAndDistant/data_science_with_r/blob/main/Tidy_Tuesday/2022/Week%209%20:%20US%20Alternative%20Fuel%20Stations/Lights%20On.Rmd)
+[Code](https://github.com/NearAndDistant/data_science_with_r/tree/main/Tidy_Tuesday/2022/Week%2009%20:%20US%20Alternative%20Fuel%20Stations)
 
 ![alt_energy](https://user-images.githubusercontent.com/79040885/156926599-08d3b886-0491-4d22-a6a0-11d1133978db.png)
 
 ## Democracy in Crisis
-[Code](https://github.com/NearAndDistant/data_science_with_r/blob/main/Tidy_Tuesday/2022/Week%208%20:%20Democracy%20in%20Crisis/Democracy%20in%20Crisis.Rmd)
+[Code](https://github.com/NearAndDistant/data_science_with_r/tree/main/Tidy_Tuesday/2022/Week%2008%20:%20Democracy%20in%20Crisis)
 
 ![russia](https://user-images.githubusercontent.com/79040885/155893068-a425fb2f-8d9c-4f43-8c17-27e0cedbeb59.png)
 
 ## WEB Du Bois Challenge 2022
 
 Recreation: Left | Original: Right
-[Code](https://github.com/NearAndDistant/data_science_with_r/blob/main/Tidy_Tuesday/2022/Week%207%20:%20WEB%20Du%20Bois%20Challenge%202022/property_value.Rmd)
+[Code](https://github.com/NearAndDistant/data_science_with_r/tree/main/Tidy_Tuesday/2022/Week%2007%20:%20WEB%20Du%20Bois%20Challenge%202022)
 
 ![web_du_bois_side_by_side](https://user-images.githubusercontent.com/79040885/154799088-c84b2342-5609-4ba6-b978-7fb15201ad7c.jpeg)
 
 # Tuskegee Airmen
 Recreation: Left | Original: Right
-[Code](https://github.com/NearAndDistant/data_science_with_r/blob/main/Tidy_Tuesday/2022/Week%206%20:%20Tuskegee%20Airmen/dubois_tusk_airmen.Rmd)
+[Code](https://github.com/NearAndDistant/data_science_with_r/tree/main/Tidy_Tuesday/2022/Week%2006%20:%20Tuskegee%20Airmen)
 
 <img width="1397" alt="Screenshot 2022-02-19 at 11 30 47" src="https://user-images.githubusercontent.com/79040885/154799019-2a64168f-fc23-4156-85f9-8e9f8bd2bf1a.png">
 
 ## Top Dogs
-[Code](https://github.com/NearAndDistant/data_science_with_r/tree/main/Tidy_Tuesday/2022/Week%205%20:%20Dog%20Breeds)
+[Code](https://github.com/NearAndDistant/data_science_with_r/tree/main/Tidy_Tuesday/2022/Week%2005%20:%20Dog%20Breeds)
 
 All 195 doggos shown in reactive Shiny app [here](https://nearanddistant.shinyapps.io/Dogs_of_the_Tidyverse/?_ga=2.47055716.2146766715.1644178050-1900284593.1644178050), 2 examples below:
 
@@ -32,17 +39,17 @@ All 195 doggos shown in reactive Shiny app [here](https://nearanddistant.shinyap
 ![Staffordshire Bull Terriers](https://user-images.githubusercontent.com/79040885/152645279-dbd50cec-a391-4cec-98f9-84b03044587d.png)
 
 ## The Mighty Cocoa Bean
-[Code](https://github.com/NearAndDistant/data_science_with_r/tree/main/Tidy_Tuesday/2022/Week%203%20:%20Chocolate%20Ratings)
+[Code](https://github.com/NearAndDistant/data_science_with_r/tree/main/Tidy_Tuesday/2022/Week%2003%20:%20Chocolate%20Ratings)
 
 ![chocomap](https://user-images.githubusercontent.com/79040885/152196024-9b965a8a-d84d-4cf8-a571-2b1a1ee2b2c9.png)
 
 ## US Bee Colonies: A Changing Picture
-[Code](https://github.com/NearAndDistant/data_science_with_r/tree/main/Tidy_Tuesday/2022/Week%202%20:%20Bee%20Loss)
+[Code](https://github.com/NearAndDistant/data_science_with_r/tree/main/Tidy_Tuesday/2022/Week%2002%20:%20Bee%20Loss)
 
 ![bee_plot](https://user-images.githubusercontent.com/79040885/151707458-8a3f369a-cc2a-4118-a593-1e3ccffed99f.png)
 
 ## Degrees of Statecraft
-[Code](https://github.com/NearAndDistant/data_science_with_r/tree/main/Tidy_Tuesday/2022/Week%201%20:%20BYOD)
+[Code](https://github.com/NearAndDistant/data_science_with_r/tree/main/Tidy_Tuesday/2022/Week%2001%20:%20BYOD)
 
 ![degrees_of_statecraft](https://user-images.githubusercontent.com/79040885/148646644-54ea670c-9eff-48f2-8dd0-4542cdcbdf41.jpeg)
 
