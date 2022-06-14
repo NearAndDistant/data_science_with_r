@@ -91,7 +91,7 @@ library(ggh4x)
 labels <- rev(c("Exceptional Dry", "Extreme Dry", "Severe Dry", "Moderate Dry", "Abnormally Dry", "Abnormally Wet", "Moderate Wet"   , "Severe Wet", "Extreme Wet", "Exceptional Wet"))
 
 explan  <- "The US National Oceanic and Atmospheric Aministration (NOAA) collect data on drought conditions going back to 1895. This meteroalogical data is bucketed into drought categories e.g. 'exceptional dry', 'extreme dry' etc. using the Standardized Precipitation Index (SPI)."
-explan2 <- "This graphic shows the percentage of each SPI drought categories in the US since 1985 split out by wet (bottom) and dry (top)."
+explan2 <- "This graphic shows the percentage of each SPI drought categories in the US since 1895 split out by wet (bottom) and dry (top)."
 
 cap <- "Graphic: @NearAndDistant | Data: @DroughtGov"
 
