@@ -1,1 +1,1 @@
-![drought_con](https://user-images.githubusercontent.com/79040885/173668241-9e24d9d9-f869-471b-8368-ad2df8a40b1d.png)
+![drought_con](https://user-images.githubusercontent.com/79040885/173668910-ec8051ca-15ec-45a2-b41d-94f87ce27f0d.png)
