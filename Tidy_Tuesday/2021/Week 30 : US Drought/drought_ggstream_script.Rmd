@@ -1,0 +1,73 @@
+---
+title: "US Drought"
+author: "NearAndDistant"
+date: '2022-06-14'
+output: html_document
+---
+
+# US Drought
+
+We want to recreate, this: https://www.drought.gov/historical-information?dataset=1&selectedDateUSDM=20110301&selectedDateSpi=19580901
+
+```{r}
+library(tidyverse)
+
+dir.create(here::here("Week 24 : US Drought"))
+
+drought <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-06-14/drought.csv')
+```
+
+### Data Dictionary
+**variable	class	  description**
+
+     D0	    double	Abnormally dry
+     D1	    double	Moderate drought
+     D2	    double	Severe drought
+     D3	    double	Extreme drought
+     D4	    double	Exceptional drought
+     -9	    double	No Data Available
+     W0	    double	Abnormally wet
+     W1	    double	Moderate wet
+     W2	    double	Severe wet
+     W3	    double	Extreme wet
+     W4	    double	Exceptional wet
+     
+```{r}
+library(lubridate)
+
+# clean
+
+drought_cln <- 
+  drought %>%
+  janitor::clean_names() %>%
+  # formatting
+  mutate(date = str_remove(date,"d_"),
+         date = ymd(date)) %>%
+  mutate(state = str_to_title(state)) %>%
+  # pivot
+  pivot_longer(cols = c(d0:w4), names_to = "drought_code", values_to = "drought_level") %>%
+  select(-x0) %>%
+  # factorise
+  mutate(drought_label = factor(drought_code , 
+                                levels = c("d0" , "d1" , "d2" , "d3" , "d4", "x9", "w0" , "w1" , "w2" , "w3" , "w4"),
+                                labels = c("Abnormally Dry", "Moderate Dry", "Severe Dry", "Extreme Dry", "Exceptional Dry", 
+                                           "No Data",
+                                           "Abnormally Wet", "Moderate Wet", "Severe Wet", "Extreme Wet", "Exceptional Wet"))) %>%
+  mutate(drought_level = if_else(drought_level > 100, 100, drought_level),
+         drought_level = if_else(drought_label %in% c("Abnormally Wet", "Moderate Wet", "Severe Wet", "Extreme Wet", "Exceptional Wet"), -drought_level, drought_level)) %>%
+  # summarise
+  filter(drought_level != 0,
+         drought_label != "No Data")
+  
+  
+```
+
+```{r}
+
+drought_cln %>%
+  ggplot(aes(date , drought_level)) +
+  geom_stream(aes(fill = drought_label), bw = 0.45 , n_grid = 200) +
+  scale_fill_viridis_b()
+
+```
+

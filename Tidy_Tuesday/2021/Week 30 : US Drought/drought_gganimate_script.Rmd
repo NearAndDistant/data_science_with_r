@@ -1,0 +1,70 @@
+---
+title: "Drought Map"
+author: "NearAndDistant"
+date: '2022-06-14'
+output: html_document
+---
+
+# Flood Animation
+
+```{r}
+
+drought_fips <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-06-14/drought-fips.csv')
+
+```
+
+# FIPS
+State	character	State name
+FIPS	character	FIPS id (first two digits = state, last 3 digits = county)
+DSCI	double	Drought Score (0 to 500) Zero means that none of the area is abnormally dry or in drought, and 500 means that all of the area is in D4, exceptional drought.
+date	double	date in ISO
+
+```{r}
+
+drought_cln <- 
+  drought %>%
+  janitor::clean_names() %>%
+  # formatting
+  mutate(date = str_remove(date,"d_"),
+         date = ymd(date)) %>%
+  mutate(state = str_to_title(state)) %>%
+  # pivot
+  pivot_longer(cols = c(d0:w4), names_to = "drought_code") %>%
+  # filtering
+  filter(date >= "1990-01-01") %>%
+  mutate(drought_code = factor(drought_code , 
+                               levels = c("w0" , "w1" , "w2" , "w3" , "w4"),
+                               labels = c("Abnormal", "Moderate", "Severe", "Extreme", "Exceptional"))) %>%
+  filter(drought_code %in% c("Abnormal", "Moderate", "Severe", "Extreme", "Exceptional"),
+         !is.na(drought_code)) %>%
+  # slice top factor per date and state
+  group_by(date , state) %>%
+  slice_max(order_by = value , n = 1) %>%
+  ungroup() %>%
+  select(-x0)
+
+```
+
+# Base Map
+```{r}
+library(tigris)
+library(sf)
+theme_set(theme_minimal())
+
+# import state and counties from tigris so we can filter out states we do not want to use (Alaska , Hawaii etc)
+counties <- tigris::counties() %>% select(state_id = STATEFP , county_id = GEOID , county_name = NAMELSAD)
+
+# lookup_code for "Alaska" , "Hawaii" , "Puerto Rico" to strip them out of map
+#https://www.nrcs.usda.gov/wps/portal/nrcs/detail/?cid=nrcs143_013697
+
+#The code for Alaska is '02'.
+#The code for Hawaii is '15'. 
+#The code for Puerto Rico is '72'.
+
+counties <- 
+  counties %>%
+  rename(fips = county_id) %>%
+  filter(!state_id %in% c("02" , "15" , "72")) %>%
+  st_simplify(dTolerance = 0.060)
+
+```
