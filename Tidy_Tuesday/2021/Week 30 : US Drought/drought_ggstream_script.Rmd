@@ -42,32 +42,90 @@ drought_cln <-
   janitor::clean_names() %>%
   # formatting
   mutate(date = str_remove(date,"d_"),
-         date = ymd(date)) %>%
-  mutate(state = str_to_title(state)) %>%
+         date = ymd(date),
+         state = str_to_title(state)) %>%
   # pivot
   pivot_longer(cols = c(d0:w4), names_to = "drought_code", values_to = "drought_level") %>%
   select(-x0) %>%
-  # factorise
-  mutate(drought_label = factor(drought_code , 
-                                levels = c("d0" , "d1" , "d2" , "d3" , "d4", "x9", "w0" , "w1" , "w2" , "w3" , "w4"),
-                                labels = c("Abnormally Dry", "Moderate Dry", "Severe Dry", "Extreme Dry", "Exceptional Dry", 
-                                           "No Data",
-                                           "Abnormally Wet", "Moderate Wet", "Severe Wet", "Extreme Wet", "Exceptional Wet"))) %>%
-  mutate(drought_level = if_else(drought_level > 100, 100, drought_level),
-         drought_level = if_else(drought_label %in% c("Abnormally Wet", "Moderate Wet", "Severe Wet", "Extreme Wet", "Exceptional Wet"), -drought_level, drought_level)) %>%
-  # summarise
+  # filter out
   filter(drought_level != 0,
-         drought_label != "No Data")
+         drought_code  != "x9") %>%
+  # labels
+  mutate(drought_label = case_when(drought_code == "d4" ~ "Exceptional Dry" ,
+                                   drought_code == "d3" ~ "Extreme Dry"     ,
+                                   drought_code == "d2" ~ "Severe Dry"      ,
+                                   drought_code == "d1" ~ "Moderate Dry"    ,
+                                   drought_code == "d0" ~ "Abnormally Dry"  ,
+                                   drought_code == "w0" ~ "Abnormally Wet"  ,
+                                   drought_code == "w1" ~ "Moderate Wet"    ,
+                                   drought_code == "w2" ~ "Severe Wet"      ,
+                                   drought_code == "w3" ~ "Extreme Wet"     ,
+                                   drought_code == "w4" ~ "Exceptional Wet" )) %>%
+  mutate(type = if_else(drought_label %in% c("Abnormally Wet", "Moderate Wet", "Severe Wet", "Extreme Wet", "Exceptional Wet"), "Wet", "Dry")) %>%
+  # count
+  count(date, type, drought_label) %>%
+  group_by(date) %>%
+  mutate(pc = n/sum(n)) %>%
+  ungroup() %>%
+  # fill
+  mutate(fill          = case_when(drought_label == "Exceptional Dry"   ~ "#C7EF34FF",
+                                   drought_label == "Extreme Dry"       ~ "#FABA39FF",
+                                   drought_label == "Severe Dry"        ~ "#F66B19FF",
+                                   drought_label == "Moderate Dry"      ~ "#CB2A04FF",
+                                   drought_label == "Abnormally Dry"    ~ "#7A0403FF",
+                                   drought_label == "Abnormally Wet"    ~ "#36AAF9FF",
+                                   drought_label == "Moderate Wet"      ~ "#1AE4B6FF",
+                                   drought_label == "Severe Wet"        ~ "#30123BFF",
+                                   drought_label == "Extreme Wet"       ~ "#4662D7FF",
+                                   drought_label == "Exceptional Wet"   ~ "#72FE5EFF")) %>%
+  # create up and down
+  mutate(pc = if_else(drought_label %in% c("Abnormally Wet", "Moderate Wet", "Severe Wet", "Extreme Wet", "Exceptional Wet"), -pc, pc))
   
+        
   
 ```
 
 ```{r}
+library(ggh4x)
 
+labels <- rev(c("Exceptional Dry", "Extreme Dry", "Severe Dry", "Moderate Dry", "Abnormally Dry", "Abnormally Wet", "Moderate Wet"   , "Severe Wet", "Extreme Wet", "Exceptional Wet"))
+
+explan  <- "The US National Oceanic and Atmospheric Aministration (NOAA) collect data on drought conditions going back to 1895. This meteroalogical data is bucketed into drought categories e.g. 'exceptional dry', 'extreme dry' etc. using the Standardized Precipitation Index (SPI)."
+explan2 <- "This graphic shows the percentage of each SPI drought categories in the US since 1985 split out by wet (bottom) and dry (top)."
+
+cap <- "Graphic: @NearAndDistant | Data: @DroughtGov"
+
+plot_drought <- 
 drought_cln %>%
-  ggplot(aes(date , drought_level)) +
-  geom_stream(aes(fill = drought_label), bw = 0.45 , n_grid = 200) +
-  scale_fill_viridis_b()
+  ggplot(aes(x = date , y = pc)) +
+  geom_col(aes(fill = fill)) +
+  scale_x_date(expand = c(0,0), breaks = "5 year", labels = scales::date_format("%Y")) +
+  scale_y_continuous(expand = c(0,0), breaks = seq(-1,1,0.2), labels = scales::percent(c(1,0.8,0.6,0.4,0.2,0,0.2,0.4,0.6,0.8,1))) +
+  scale_fill_viridis_d(NULL, option = "turbo", direction = 1, guide = "stringlegend", labels = labels) + # labels = levels(drought_cln$drought_label)
+  guides(fill  = guide_stringlegend(nrow = 1, face = "bold", size = 14)) +
+  coord_cartesian(ylim = c(-1, 1), clip = "off") +
+  # annotations
+  annotate("text", label = "What is this?",        x = as.Date("1970-01-01"), y = 1.22, family = "Montserrat SemiBold", size = 5, color = "#454545", hjust = 0) +
+  annotate("text", label = str_wrap(explan,  105), x = as.Date("1970-01-01"), y = 1.10, family = "Montserrat SemiBold", size = 3, color = "#696969", hjust = 0) +
+  annotate("text", label = str_wrap(explan2, 105), x = as.Date("1970-01-01"), y = 0.98, family = "Montserrat SemiBold", size = 3, color = "#696969", hjust = 0) +
+  annotate("text", label = cap,                    x = as.Date("1896-01-01"), y = 1.12, family = "Montserrat"         , size = 3, color = "#696969", hjust = 0) +
+  labs(title    = "US Historical Drought Conditions") +
+  theme_classic() +
+  theme(
+    plot.title   = element_text(family = "Montserrat SemiBold", color = "#454545", hjust = 0, vjust = 5, size = 40),
+    #plot.caption = element_text(family = "Montserrat", color = "#696969", hjust = 0, vjust = 5, size = 40),
+    legend.title = element_blank(),
+    legend.position = c(0.5, 0.05),
+    axis.title = element_blank(),
+    axis.ticks.x = element_blank(),
+    panel.grid = element_blank(),
+    plot.margin = margin(2,0.5,1,0.5, unit = "cm"))
+
+```
+
+```{r}
+
+ggsave(plot = plot_drought, here::here("Week 24 : US Drought/drought_con.png"), width = 18, height = 10, dpi = 360)
 
 ```
 
