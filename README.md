@@ -5,6 +5,8 @@
 
 ![drought_con](https://user-images.githubusercontent.com/79040885/173839309-ddd01223-1dad-4305-94d3-a1cb3c453ce6.png)
 
+![drought_map](https://user-images.githubusercontent.com/79040885/173879614-c001f73b-aeb9-4c1f-9c7d-41bfb1e54c88.png)
+
 ## Women's Rugby
 [Code](https://github.com/NearAndDistant/data_science_with_r/tree/main/Tidy_Tuesday/2022/Week%2021:%20Womens%20Rugby)
 
