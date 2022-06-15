@@ -8,6 +8,7 @@ output: html_document
 # Flood Animation
 
 ```{r}
+library(tidyverse)
 
 drought_fips <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-06-14/drought-fips.csv')
 
@@ -20,28 +21,17 @@ DSCI	double	Drought Score (0 to 500) Zero means that none of the area is abnorma
 date	double	date in ISO
 
 ```{r}
+library(tidycensus)
 
 drought_cln <- 
-  drought %>%
+  drought_fips %>%
   janitor::clean_names() %>%
   # formatting
-  mutate(date = str_remove(date,"d_"),
-         date = ymd(date)) %>%
-  mutate(state = str_to_title(state)) %>%
-  # pivot
-  pivot_longer(cols = c(d0:w4), names_to = "drought_code") %>%
-  # filtering
-  filter(date >= "1990-01-01") %>%
-  mutate(drought_code = factor(drought_code , 
-                               levels = c("w0" , "w1" , "w2" , "w3" , "w4"),
-                               labels = c("Abnormal", "Moderate", "Severe", "Extreme", "Exceptional"))) %>%
-  filter(drought_code %in% c("Abnormal", "Moderate", "Severe", "Extreme", "Exceptional"),
-         !is.na(drought_code)) %>%
-  # slice top factor per date and state
-  group_by(date , state) %>%
-  slice_max(order_by = value , n = 1) %>%
-  ungroup() %>%
-  select(-x0)
+  rename(state_abb   = "state") %>%
+  mutate(state_code  = substr(fips, start = 1, stop = 2),
+         county_code = substr(fips, start = 3, stop = 5)) %>%
+  left_join(fips_codes, by = c("state_code", "county_code")) %>%
+  select(state_name, state_abb, county, fips, date, dsci)
 
 ```
 
@@ -61,10 +51,69 @@ counties <- tigris::counties() %>% select(state_id = STATEFP , county_id = GEOID
 #The code for Hawaii is '15'. 
 #The code for Puerto Rico is '72'.
 
-counties <- 
+counties_m <- 
   counties %>%
   rename(fips = county_id) %>%
   filter(!state_id %in% c("02" , "15" , "72")) %>%
-  st_simplify(dTolerance = 0.060)
+  st_simplify(preserveTopology = TRUE, dTolerance = 1000) # https://www.r-bloggers.com/2021/03/simplifying-geospatial-features-in-r-with-sf-and-rmapshaper/
+
+# join into one table of geoinfo and droughts
+doParallel::registerDoParallel()
+
+drought_counties <- 
+  counties_m %>% 
+  inner_join(drought_cln, by = "fips") %>%
+  select(fips, state_id, state_abb, state_name, county_name, date, dsci, geometry)
 
 ```
+
+# CREATE MAP STATIC / GF
+```{r}
+library(gganimate)
+library(transformr)
+
+# plot_static <-
+gif_map <- 
+drought_counties %>%
+  # filter(date == "2022-06-07") %>% # static plot
+  filter(date >= "2021-09-01") %>% # animate
+  ggplot(aes(fill = dsci)) +
+  geom_sf(color = "white", size = 0.1) +
+  borders("state") +
+  transition_manual(date) +
+  scale_fill_viridis_c(option = "turbo" , direction = 1) +
+  labs(
+    subtitle = "{current_frame}",
+    caption  = "Source: droughtmonitor.unl.edu | Graphic: @NearandDistant",
+    fill     = "Drought Level") +
+  ggthemes::theme_map() +
+  coord_sf(crs = st_crs(2163)) +
+  theme(
+    plot.subtitle = element_text(family = "Montserrat SemiBold", color = "#454545", size = 20*.pt, vjust = 0,   hjust = 0.01),
+    plot.caption  = element_text(family = "Montserrat"         , color = "#454545", size = 10*.pt, vjust = -12, hjust = 0.01),
+    legend.title  = element_text(family = "Montserrat SemiBold", color = "#454545", size = 20*.pt, vjust = 1),
+    legend.text   = element_text(family = "Montserrat SemiBold", color = "#454545", size = 10*.pt, hjust = 0),
+    legend.position  = c(0,-0.05),
+    legend.key.width  = unit(3  *.pt, units = "cm"),
+    legend.key.height = unit(0.2*.pt, units = "cm"),
+    legend.direction = "horizontal",
+    plot.margin      = margin(-2,0,1.5,0, unit = "cm"))
+
+```
+
+```{r}
+
+# static save
+ggsave(plot = plot_static, here::here("Week 24 : US Drought/drought_map.png"), bg = "white", width = 16, height = 10, dpi = 360)
+
+# gganimate save
+library(gifski)
+
+gif_map %>%
+animate(fps = 55 , nframe = 300 , 
+        height = 2000 , width = 2340,
+        start_pause = 1, end_pause = 1,
+        renderer = gifski_renderer(here::here("Week 24 : US Drought/us_droughts_simp.gif")))
+
+```
+
