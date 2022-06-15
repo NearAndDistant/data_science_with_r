@@ -1,5 +1,10 @@
 # Data Science with R: Projects
 
+## US Drought
+[Code](https://github.com/NearAndDistant/data_science_with_r/tree/main/Tidy_Tuesday/2022/Week%2024%20:%20US%20Drought)
+
+![drought_con](https://user-images.githubusercontent.com/79040885/173839309-ddd01223-1dad-4305-94d3-a1cb3c453ce6.png)
+
 ## Women's Rugby
 [Code](https://github.com/NearAndDistant/data_science_with_r/tree/main/Tidy_Tuesday/2022/Week%2021:%20Womens%20Rugby)
 
