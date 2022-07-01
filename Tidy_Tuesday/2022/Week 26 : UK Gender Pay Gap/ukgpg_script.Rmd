@@ -1,0 +1,121 @@
+---
+title: "Gender Pay Gap"
+author: "NearAndDistant"
+date: '2022-06-28'
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+
+dir.create(here::here("Week 26 : UK Gender Pay Gap"))
+
+ukgpg_raw <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-06-28/paygap.csv')
+
+```
+
+```{r}
+
+remove <- c("LIMITED", "PUBLIC COMPANY", "PLC", "P.L.C", "CORPORATION", "LTD", "LTD.", "LIMITED", "GROUP", "SERVICES")
+
+ukgpg <- ukgpg_raw |> 
+  janitor::clean_names() |> 
+  mutate(
+    across(c(due_date, date_submitted),lubridate::as_datetime),
+    employer_name = str_remove_all(employer_name, "\""),
+    employer_name = str_replace_all(employer_name, ", |,", ", "),
+    year          = lubridate::year(due_date)) |>
+  select(year, company = employer_name, size = employer_size, first =  male_top_quartile, fourth = male_lower_quartile) |>
+  mutate(first   = first/100,
+         fourth  = fourth/100,
+         text    = if_else(first > fourth, first, fourth),
+         min     = if_else(first < fourth, first, fourth),
+         diff    = text - min,
+         text    = if_else(str_detect(company, "UBER"), text - 0.10, text),) |>
+  mutate(company = str_squish(company),
+         company = str_to_upper(company),
+         company = str_remove(company,"COMPANY"),
+         company = str_remove(company,"PUBLIC"),
+         company = str_remove(company,"LIMITED"),
+         company = str_remove(company,"LTD."),
+         company = str_remove(company, str_c(remove, collapse = "|")))
+
+```
+
+```{r}
+library(ggforce)
+library(ggtext)
+library(extrafont); font_import(pattern = "Montserrat")
+
+txt  <- "The UKs Gender Pay Gap legislation requires all companies to report gender income inequalities in their workforce."
+txt2 <- "Using this data we can see that in 2022 all but a few large UK companies have an over-representation of men in the upper quartile of income (the quarter of the respective company workforce paid the most). All but two have more men represented in the lower quartile than the top, OpenReach and the NHS"
+txt3 <- "In terms of the divergance of male representation between the upper and lower quartile, Amazon has the least gender divergence (seeing a 67% over-representation in both, a male heavy company in all respects) and Compass UK has the largest gender divergence (a 41% difference between the upper and lower quartiles, a systematic promotion of men)."
+
+plot_ukgpg <-
+ukgpg |>
+  filter(year == 2022) |>
+  filter(size == "20,000 or more") |> 
+  filter(!is.na(first)) |>
+  mutate(minmax = if_else(diff == max(diff), "top", NA_character_),
+         minmax = if_else(diff == min(diff), "bot", minmax)) |> 
+  ggplot() +
+  geom_vline(xintercept = 0.5, color = "#FFD06F", size = 0.5, alpha = 0.7) +
+  geom_link(aes(x = first, xend = fourth, y = reorder(company, first), yend = company), color = "grey80", size = 0.5) +
+  geom_point(aes(first,  company), color = "#72B5DC", shape = 19, size = 3, alpha = 0.8) +
+  geom_point(aes(fourth, company), color = "#E76254", shape = 18, size = 3, alpha = 0.8) +
+  geom_text(aes(label = company, x = text, y = company, color = minmax), size = 3, hjust = 0, nudge_x = 0.01, show.legend = FALSE) +
+  # title
+  annotate(geom = "text", label = str_wrap(str_to_upper("The Representation of Men in Lower and Upper Income Quartiles in large UK Companies (2022)"), 16), 
+           x = -0.25, y = 50,   family = "Montserrat SemiBold", color = "grey50", hjust = 0, size = 8) +
+  # caption
+  annotate(geom = "text", label = str_wrap(str_to_upper("Data: Office of National Statistics (2022) Graphic: @NearAndDistant"), 45), 
+           x = -0.25, y = 37.5, family = "Montserrat", color = "grey60", hjust = 0, size = 3) +
+  # text
+  geom_text(label = "What is this?",    x = -0.25, y = 27, family = "Montserrat SemiBold", color = "grey40", hjust = 0, size = 4) + 
+  geom_text(label = str_wrap(txt, 45),  x = -0.25, y = 24, family = "Montserrat", color = "grey70",          hjust = 0, size = 3) +  
+  geom_text(label = str_wrap(txt2, 45), x = -0.25, y = 17, family = "Montserrat", color = "grey70",          hjust = 0, size = 3) +
+  geom_text(label = str_wrap(txt3, 45), x = -0.25, y = 06, family = "Montserrat", color = "grey70",          hjust = 0, size = 3) + 
+  scale_color_manual(values = c("grey50", "grey50"), na.value = "grey80") +
+  coord_cartesian(clip = "off") +
+  labs(x = "Male Representation within Quartiles (%)") +
+  scale_x_continuous(breaks = seq(0,1,0.5), labels = scales::percent_format(), expand = c(0,0), limits = c(-0.25,1)) +
+  theme_minimal() +
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        axis.text.x  = element_text(family = "Montserrat SemiBold", size = 16, vjust = -1, color = "grey60"),
+        axis.text.y  = element_blank(),
+        panel.grid   = element_blank(),
+        plot.margin = margin(0.5, 2, 0.5, 0.5, unit = "cm"))
+
+```
+
+```{r}
+# legend
+
+leg <-
+ukgpg |>
+  filter(year == 2022) |>
+  filter(company == "UBER LONDON ") |>
+  ggplot() +
+  geom_link(aes(x = first, xend = fourth, y = reorder(company, first), yend = company), color = "grey80", size = 2, alpha = 0.6) +
+  geom_point(aes(first,  company), color = "#72B5DC", shape = 19,     size = 10, alpha = 0.5) +
+  geom_text(aes(first, company),   color = "grey50", label = "UPPER", size = 5,  alpha = 0.95, family = "Montserrat SemiBold") +
+  geom_point(aes(fourth, company), color = "#E76254", shape = 18,     size = 10, alpha = 0.5) +
+  geom_text(aes(fourth, company),  color = "grey50", label = "LOWER", size = 5,  alpha = 0.95, family = "Montserrat SemiBold") +
+  coord_cartesian(clip = "off") +
+  theme_void()
+
+```
+
+```{r}
+library(cowplot)
+
+panel_final <-
+ggdraw() +
+  draw_plot(plot_ukgpg) +
+  draw_plot(leg, width = 0.1, height = 0.1, x = 0.05, y = 0.48)
+
+# save
+ggsave(plot = panel_final, here::here("Week 26 : UK Gender Pay Gap/UKGPG.png"), bg = "white", dpi = 360, height = 10, width = 16)
+
+```
