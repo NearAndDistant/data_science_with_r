@@ -1,5 +1,10 @@
 # Data Science with R: Projects
 
+# UK Gender Pay Gap
+[Code](https://github.com/NearAndDistant/data_science_with_r/tree/main/Tidy_Tuesday/2022/Week%2026%20:%20UK%20Gender%20Pay%20Gap)
+
+![UKGPG](https://user-images.githubusercontent.com/79040885/176925328-f70123f5-2a37-4ee0-a8be-4921122340a7.png)
+
 ## US Drought
 [Code](https://github.com/NearAndDistant/data_science_with_r/tree/main/Tidy_Tuesday/2022/Week%2024%20:%20US%20Drought)
 
