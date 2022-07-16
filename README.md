@@ -3,7 +3,7 @@
 # European Aviation Recovery since the Pandemic Started
 [Code](https://github.com/NearAndDistant/data_science_with_r/tree/main/Tidy_Tuesday/2022/Week%2028%20:%20European%20Flights)
 
-![Week 28 : EU Aviation Recovery](https://user-images.githubusercontent.com/79040885/179367373-e7db27c0-033e-41c1-871f-1df397a27dd0.png)
+![Week 28 : EU Aviation Recovery](https://user-images.githubusercontent.com/79040885/179367460-ea4fe4cc-dcd7-4512-807b-1aac96dcb7a4.png)
 
 # UK Gender Pay Gap
 [Code](https://github.com/NearAndDistant/data_science_with_r/tree/main/Tidy_Tuesday/2022/Week%2026%20:%20UK%20Gender%20Pay%20Gap)
