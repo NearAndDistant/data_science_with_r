@@ -109,7 +109,7 @@ flights_trans |>
         panel.grid.major.y = element_line(color = "grey85", size = 0.25),
         panel.background   = element_rect(color = "#fff2e6", fill = "#fff2e6"),
         plot.background    = element_rect(color = "#fff2e6", fill = "#fff2e6"),
-        plot.margin        = margin(2,3,2,2.5, unit = "cm"))
+        plot.margin        = margin(2,6,2,3, unit = "cm"))
 
 ```
 
@@ -195,7 +195,7 @@ eu_flights_trans |>
         panel.grid.major.y = element_line(color = "grey85", size = 0.25),
         panel.background   = element_rect(color = "#fff2e6", fill = "#fff2e6"),
         plot.background    = element_rect(color = "#fff2e6", fill = "#fff2e6"),
-        plot.margin        = margin(0, 3.25, 1, 2.75, unit = "cm"))
+        plot.margin        = margin(0, 3.25, 1, 3, unit = "cm"))
 
 ```
 
@@ -207,9 +207,9 @@ ggdraw(xlim = c(0.02,0.98)) +
   draw_plot(geofacet_eu, y = 0.2, height = 0.8) +
   draw_plot(plot_eu, height = 0.25) +
   draw_text("The Recovery of the Aviation Sector in Europe", 
-            x = 0.06, y = 0.97, hjust = 0, size = 20, family = "Montserrat SemiBold") + 
+            x = 0.07, y = 0.97, hjust = 0, size = 20, family = "Montserrat SemiBold") + 
   draw_text("The number of flights as a proportion of the pre-pandemic average (2016-2019) across months within each European country.", 
-            x = 0.06, y = 0.945, hjust = 0, size = 12, family = "Montserrat") + 
+            x = 0.07, y = 0.945, hjust = 0, size = 12, family = "Montserrat") + 
   draw_text(str_wrap("The red area represents the first year of the pandemic (2020).", 35),
             x = 0.25, y = 0.16, hjust = 0, size = 8, family = "Montserrat SemiBold") +
   draw_text("Data: @Eurocontrol | Graphic: @NearAndDistant",
