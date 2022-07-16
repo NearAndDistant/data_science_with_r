@@ -1,0 +1,219 @@
+
+raw data here: https://github.com/rfordatascience/tidytuesday/tree/master/data/2022/2022-07-12
+
+### Europe
+```{r}
+
+weu <- c("Germany","United Kingdom","France","Italy","Spain","Netherlands","Belgium","Sweden",
+         "Portugal","Austria","Switzerland","Denmark","Finland","Norway","Ireland", "Luxembourgh",
+         "Malta", "Czech Republic", "Austria", "Slovenia", "Poland", "Slovakia", "Hungary", "Croatia",
+         "Latvia", "Lithuania", "Romania", "Bulgaria", "Greece", "Estonia", "Cyprus")
+
+```
+
+# Import
+```{r}
+
+flight_raw <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-07-12/flights.csv')
+
+flights <- 
+  flight_raw |> 
+  janitor::clean_names() |> 
+  mutate(year       = as.integer(year),
+         state_name = str_trim(state_name))
+
+```
+
+# average flights pre-pandemic years - pandemic hits 2020 so use pre 2020
+```{r}
+library(tidyverse)
+
+# pre-pandemic flights
+prepan_avg <-
+flights |> 
+  filter(year < 2020) |>
+  group_by(state_name, year, month_num) |>
+  summarise(tot = sum(flt_dep_1, na.rm = TRUE)) |>
+  ungroup() |>
+  group_by(state_name, month_num) |>
+  summarise(avg = round(mean(tot, na.rm = TRUE),0)) |> 
+  ungroup()
+
+# post-pandemic flights
+pospan_flights <- 
+flights |>
+  filter(year >= 2020) |>
+  mutate(year = as_factor(year)) |>
+  group_by(state_name, year, month_num) |>
+  summarise(n = sum(flt_dep_1, na.rm = TRUE)) |>
+  ungroup()
+
+# lowest year 2020
+pospan_2020 <- pospan_flights |> filter(year == 2020) |> rename(lockdown = "n") |> select(-year)
+
+# join and transform for percentages
+flights_trans <-
+pospan_flights |>
+  left_join(prepan_avg) |>
+  mutate(pre_avg = 1,
+         pos_pct = n / avg) |>
+  left_join(pospan_2020) |> # for ribbon
+  mutate(ymin = lockdown / avg)
+
+# current flights
+cur_flights <-
+  flights_trans |>
+  filter(year == 2022 & month_num == "05") |>
+  select(state_name, year, month_num, pos_pct) |>
+  rename(cur = "pos_pct") |>
+  mutate(cur = scales::percent(cur, 2))
+
+```
+
+# plot the actual flights in 2020 onwards
+```{r}
+library(geofacet)
+library(extrafont); font_import(pattern = "Montserrat")
+
+geofacet_eu <-
+flights_trans |>
+  left_join(cur_flights) |>
+  # change state_name so no overlap
+  mutate(facet = case_when(state_name == "Luxembourg" ~ "Lux.", TRUE ~ state_name)) |>
+  ggplot(aes(month_num, pos_pct, group = state_name, label = cur)) +
+  # ribbon of the first year of pandemic
+  geom_ribbon(aes(ymin = ymin, ymax = 1), fill = "#e47d80", alpha = 0.3, show.legend = FALSE) +
+  # average pre-pandemic
+  geom_line(aes(y = 1), color = "black", linetype = "solid", alpha = 0.3, size = 0.5, show.legend = FALSE) +
+  # years since pandemic
+  geom_line(aes(y = pos_pct, group = year, color = fct_rev(year)), linetype = "dashed", size = 0.5) +
+  # text for 2022 so far
+  geom_text(check_overlap = TRUE, nudge_x = 0.1, nudge_y = 0.02, size = 2.5, hjust = 0, family = "Montserrat") + 
+  # state names for facets
+  geom_text(aes(x = "12", y = 1.1, label = facet), check_overlap = TRUE, size = 3, hjust = 1, family = "Montserrat SemiBold") + 
+  scale_colour_manual(NULL, values = rev(c("#e47176", "#329bce", "#346594")), guide_legend(reverse = TRUE)) +
+  guides(color = guide_legend(override.aes = list(size = 4))) +
+  scale_fill_viridis_d(option = "turbo") +
+  scale_x_discrete(labels = c("J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D")) +
+  scale_y_continuous(breaks = c(0,0.5,1), labels = c("0%", "50%", "Pre-COVID Avg.")) +
+  coord_cartesian(clip = "off") +
+  facet_geo(~state_name, grid = "eu_grid1", label = "name") +
+  theme_minimal() +
+  theme(legend.position    = c(0.07,0.15),
+        strip.background   = element_blank(),
+        strip.text         = element_blank(),
+        axis.title         = element_blank(),
+        axis.text.x        = element_text(family = "Montserrat"), 
+        axis.text.y        = element_text(family = "Montserrat SemiBold"), 
+        panel.grid         = element_blank(),
+        panel.grid.major.y = element_line(color = "grey90", size = 0.25),
+        panel.background   = element_rect(color = "#fff2e6", fill = "#fff2e6"),
+        plot.background    = element_rect(color = "#fff2e6", fill = "#fff2e6"),
+        plot.margin        = margin(2,3,2,3, unit = "cm"))
+
+```
+
+# EU as a whole, average flights pre-pandemic years - pandemic hits 2020 so use pre 2020
+```{r}
+
+# pre-pandemic flights
+eu_prepan_avg <-
+flights |> 
+  filter(state_name %in% weu) |> distinct(state_name) |> count(state_name)
+  filter(year < 2020) |>
+  group_by(year, month_num) |>
+  summarise(tot = sum(flt_dep_1, na.rm = TRUE)) |>
+  ungroup() |>
+  group_by(month_num) |>
+  summarise(avg = round(mean(tot, na.rm = TRUE),0)) |> 
+  ungroup()
+
+# post-pandemic flights
+eu_pospan_flights <- 
+flights |>
+  filter(year >= 2020) |>
+  mutate(year = as_factor(year)) |>
+  group_by(year, month_num) |>
+  summarise(n = sum(flt_dep_1, na.rm = TRUE)) |>
+  ungroup()
+
+# lowest year 2020
+eu_pospan_2020 <- eu_pospan_flights |> filter(year == 2020) |> rename(lockdown = "n") |> select(-year)
+
+# join and transform for percentages
+eu_flights_trans <-
+eu_pospan_flights |>
+  left_join(eu_prepan_avg) |>
+  mutate(pre_avg = 1,
+         pos_pct = n / avg) |>
+  left_join(eu_pospan_2020) |> # for ribbon
+  mutate(ymin = lockdown / avg)
+
+# current flights
+eu_cur_flights <-
+  eu_flights_trans |>
+  filter(year == 2022 & month_num == "05") |>
+  select(year, month_num, pos_pct) |>
+  rename(cur = "pos_pct") |>
+  mutate(cur = scales::percent(cur, 2))
+
+```
+
+```{r}
+
+plot_eu <-
+eu_flights_trans |>
+  left_join(eu_cur_flights) |> 
+  ggplot(aes(month_num, pos_pct, group = 1, label = cur)) +
+  # ribbon of the first year of pandemic
+  geom_ribbon(aes(ymin = ymin, ymax = 1), fill = "#e47d80", alpha = 0.3, show.legend = FALSE) +
+  # average pre-pandemic
+  geom_line(aes(y = 1), color = "black", linetype = "solid", alpha = 0.3, size = 0.5, show.legend = FALSE) +
+  # years since pandemic
+  geom_line(aes(y = pos_pct, group = year, color = fct_rev(year)), linetype = "dashed", size = 0.5, show.legend = FALSE) +
+  # text for 2022 so far
+  geom_text(check_overlap = TRUE, nudge_x = 0, nudge_y = 0.04, size = 4, hjust = 0, family = "Montserrat") + 
+  # state names for facets
+  geom_text(aes(x = "12", y = 1.06, label = "Europe"), check_overlap = TRUE, size = 4, hjust = 1, family = "Montserrat SemiBold") + 
+  scale_colour_manual(NULL, values = rev(c("#e47176", "#329bce", "#346594")), guide_legend(reverse = TRUE)) +
+  guides(color = guide_legend(override.aes = list(size = 4))) +
+  scale_fill_viridis_d(option = "turbo") +
+  scale_x_discrete(labels = c("J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"), expand = c(0,0)) +
+  scale_y_continuous(breaks = c(0,0.5,1), labels = c("0%", "50%", "Pre-COVID Avg."), expand = c(0,0)) +
+  coord_cartesian(clip = "off") +
+  theme_minimal() +
+  theme(legend.position    = c(0.05,0.1),
+        strip.background   = element_blank(),
+        strip.text         = element_blank(),
+        axis.title         = element_blank(),
+        axis.text.x        = element_text(family = "Montserrat"), 
+        axis.text.y        = element_text(family = "Montserrat SemiBold"), 
+        panel.grid         = element_blank(),
+        panel.grid.major.y = element_line(color = "grey90", size = 0.25),
+        panel.background   = element_rect(color = "#fff2e6", fill = "#fff2e6"),
+        plot.background    = element_rect(color = "#fff2e6", fill = "#fff2e6"),
+        plot.margin        = margin(0, 3, 1, 2.5, unit = "cm"))
+
+```
+
+```{r}
+library(cowplot)
+
+panel_euflights <-
+ggdraw(xlim = c(0.02,0.98)) +
+  draw_plot(geofacet_eu, y = 0.2, height = 0.8) +
+  draw_plot(plot_eu, height = 0.25) +
+  draw_text("The Recovery of the Aviation Sector in Europe (Pre and Post Pandemic)", 
+            x = 0.06, y = 0.97, hjust = 0, size = 20, family = "Montserrat SemiBold") + 
+  draw_text("The number of flights as a proportion of the pre-pandemic average across months within each European country.", 
+            x = 0.06, y = 0.945, hjust = 0, size = 12, family = "Montserrat") + 
+  draw_text("Data: @Eurocontrol | Graphic: @NearAndDistant",
+            x = 0.06, y = 0.02, hjust = 0, size = 10, family = "Montserrat")
+
+```
+
+```{r}
+
+ggsave(plot = panel_euflights, here::here("Week 28 : EU Aviation Recovery.png"), width = 18, height = 10, dpi = 360)
+
+```
