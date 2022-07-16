@@ -86,12 +86,12 @@ flights_trans |>
   # average pre-pandemic
   geom_line(aes(y = 1), color = "black", linetype = "solid", alpha = 0.3, size = 0.5, show.legend = FALSE) +
   # years since pandemic
-  geom_line(aes(y = pos_pct, group = year, color = fct_rev(year)), linetype = "dashed", size = 0.5) +
+  geom_line(aes(y = pos_pct, group = year, color = fct_rev(year)), linetype = "dashed", size = 1, show.legend = FALSE) +
   # text for 2022 so far
   geom_text(check_overlap = TRUE, nudge_x = 0.1, nudge_y = 0.02, size = 2.5, hjust = 0, family = "Montserrat") + 
   # state names for facets
   geom_text(aes(x = "12", y = 1.1, label = facet), check_overlap = TRUE, size = 3, hjust = 1, family = "Montserrat SemiBold") + 
-  scale_colour_manual(NULL, values = rev(c("#e47176", "#329bce", "#346594")), guide_legend(reverse = TRUE)) +
+  scale_colour_manual(NULL, values = rev(c("#e47176", "#5aa929", "#346594")), breaks = c("2021", "2022"), na.value = "#e47176") +
   guides(color = guide_legend(override.aes = list(size = 4))) +
   scale_fill_viridis_d(option = "turbo") +
   scale_x_discrete(labels = c("J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D")) +
@@ -104,12 +104,12 @@ flights_trans |>
         strip.text         = element_blank(),
         axis.title         = element_blank(),
         axis.text.x        = element_text(family = "Montserrat"), 
-        axis.text.y        = element_text(family = "Montserrat SemiBold"), 
+        axis.text.y        = element_blank(), 
         panel.grid         = element_blank(),
-        panel.grid.major.y = element_line(color = "grey90", size = 0.25),
+        panel.grid.major.y = element_line(color = "grey85", size = 0.25),
         panel.background   = element_rect(color = "#fff2e6", fill = "#fff2e6"),
         plot.background    = element_rect(color = "#fff2e6", fill = "#fff2e6"),
-        plot.margin        = margin(2,3,2,3, unit = "cm"))
+        plot.margin        = margin(2,3,2,2.5, unit = "cm"))
 
 ```
 
@@ -170,16 +170,19 @@ eu_flights_trans |>
   # average pre-pandemic
   geom_line(aes(y = 1), color = "black", linetype = "solid", alpha = 0.3, size = 0.5, show.legend = FALSE) +
   # years since pandemic
-  geom_line(aes(y = pos_pct, group = year, color = fct_rev(year)), linetype = "dashed", size = 0.5, show.legend = FALSE) +
+  geom_line(aes(y = pos_pct, group = year, color = year), linetype = "dashed", size = 1, show.legend = FALSE) +
   # text for 2022 so far
   geom_text(check_overlap = TRUE, nudge_x = 0, nudge_y = 0.04, size = 4, hjust = 0, family = "Montserrat") + 
   # state names for facets
   geom_text(aes(x = "12", y = 1.06, label = "Europe"), check_overlap = TRUE, size = 4, hjust = 1, family = "Montserrat SemiBold") + 
-  scale_colour_manual(NULL, values = rev(c("#e47176", "#329bce", "#346594")), guide_legend(reverse = TRUE)) +
+  # state names for facets
+  geom_text(x = "01", y = 0.4, label = "2021", size = 4, hjust = 1.20, family = "Montserrat SemiBold", color = "#346594") + 
+  geom_text(x = "01", y = 0.8, label = "2022", size = 4, hjust = 1.20, family = "Montserrat SemiBold", color = "#5aa929") + 
+  scale_colour_manual(NULL, values = rev(c("#e47176", "#5aa929", "#346594")), breaks = c("2021", "2022"), na.value = "#e47176") +
   guides(color = guide_legend(override.aes = list(size = 4))) +
   scale_fill_viridis_d(option = "turbo") +
   scale_x_discrete(labels = c("J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"), expand = c(0,0)) +
-  scale_y_continuous(breaks = c(0,0.5,1), labels = c("0%", "50%", "Pre-COVID Avg."), expand = c(0,0)) +
+  scale_y_continuous(breaks = c(0,0.5,1), labels = c("0%", "50%", "Pre-COVID Avg."), limits = c(0,1.3), position = "right") +
   coord_cartesian(clip = "off") +
   theme_minimal() +
   theme(legend.position    = c(0.05,0.1),
@@ -189,10 +192,10 @@ eu_flights_trans |>
         axis.text.x        = element_text(family = "Montserrat"), 
         axis.text.y        = element_text(family = "Montserrat SemiBold"), 
         panel.grid         = element_blank(),
-        panel.grid.major.y = element_line(color = "grey90", size = 0.25),
+        panel.grid.major.y = element_line(color = "grey85", size = 0.25),
         panel.background   = element_rect(color = "#fff2e6", fill = "#fff2e6"),
         plot.background    = element_rect(color = "#fff2e6", fill = "#fff2e6"),
-        plot.margin        = margin(0, 3, 1, 2.5, unit = "cm"))
+        plot.margin        = margin(0, 3.25, 1, 2.75, unit = "cm"))
 
 ```
 
@@ -203,10 +206,12 @@ panel_euflights <-
 ggdraw(xlim = c(0.02,0.98)) +
   draw_plot(geofacet_eu, y = 0.2, height = 0.8) +
   draw_plot(plot_eu, height = 0.25) +
-  draw_text("The Recovery of the Aviation Sector in Europe (Pre and Post Pandemic)", 
+  draw_text("The Recovery of the Aviation Sector in Europe", 
             x = 0.06, y = 0.97, hjust = 0, size = 20, family = "Montserrat SemiBold") + 
-  draw_text("The number of flights as a proportion of the pre-pandemic average across months within each European country.", 
+  draw_text("The number of flights as a proportion of the pre-pandemic average (2016-2019) across months within each European country.", 
             x = 0.06, y = 0.945, hjust = 0, size = 12, family = "Montserrat") + 
+  draw_text(str_wrap("The red area represents the first year of the pandemic (2020).", 35),
+            x = 0.25, y = 0.16, hjust = 0, size = 8, family = "Montserrat SemiBold") +
   draw_text("Data: @Eurocontrol | Graphic: @NearAndDistant",
             x = 0.06, y = 0.02, hjust = 0, size = 10, family = "Montserrat")
 
