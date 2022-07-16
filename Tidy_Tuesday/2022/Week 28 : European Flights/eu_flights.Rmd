@@ -203,7 +203,7 @@ eu_flights_trans |>
 library(cowplot)
 
 panel_euflights <-
-ggdraw(xlim = c(0.02,0.98)) +
+ggdraw(xlim = c(0.02,0.95)) +
   draw_plot(geofacet_eu, y = 0.2, height = 0.8) +
   draw_plot(plot_eu, height = 0.25) +
   draw_text("The Recovery of the Aviation Sector in Europe", 
