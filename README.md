@@ -1,5 +1,10 @@
 # Data Science with R: Projects
 
+# European Aviation Recovery (pre/post panedmic)
+[Code](https://github.com/NearAndDistant/data_science_with_r/tree/main/Tidy_Tuesday/2022/Week%2028%20:%20European%20Flights)
+
+![Week 28 : EU Aviation Recovery](https://user-images.githubusercontent.com/79040885/179356522-c5a6f9c0-d5f2-460b-933c-213b867e9c2e.png)
+
 # UK Gender Pay Gap
 [Code](https://github.com/NearAndDistant/data_science_with_r/tree/main/Tidy_Tuesday/2022/Week%2026%20:%20UK%20Gender%20Pay%20Gap)
 
