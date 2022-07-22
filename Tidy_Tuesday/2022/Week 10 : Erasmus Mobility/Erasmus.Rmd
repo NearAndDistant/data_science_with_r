@@ -1,0 +1,140 @@
+---
+title: "Tidy Template"
+author: "NearAndDistant"
+date: "29/09/2021"
+output: html_document
+---
+
+##  The Erasmus Programme
+
+#### Setup & Import
+```{r}
+library(tidyverse)
+
+# create driectory for new project
+# dir.create(here::here("Week 10 : Erasmus Mobility"))
+
+# import data for project
+erasmus_raw <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-03-08/erasmus.csv')
+
+```
+
+#### Clean & Wrangle
+```{r}
+library(countrycode)
+
+# the codes which are ambiguous in GENC2C which need manually fixing below
+eu_custom_codes <- c("UK" = "United Kingdom", "AX" = "Finland", "EL" = "Greece", "PS" = "Palestine")
+
+erasmus <-
+  erasmus_raw %>%
+  select(year                 = academic_year, 
+         participants,      
+         duration_months      = mobility_duration, 
+         nationality          = participant_nationality, 
+         gender               = participant_gender, 
+         age                  = participant_age, 
+         special_needs,  
+         country_origin       = sending_country_code, 
+         city_origin          = sending_city, 
+         country_dest         = receiving_country_code, 
+         city_dest            = receiving_city) %>%
+  # pull out end of the financial year as the main year
+  mutate(year = str_sub(year, start = 6, end = 9)) %>%
+  # transform country codes
+  ## nationality
+  mutate(nationality = if_else(nationality == "-", NA_character_, nationality)) %>%
+  mutate(nationality = countrycode(nationality, "genc2c", "country.name", custom_match = eu_custom_codes)) %>%
+  ## origin
+  mutate(country_origin = countrycode(country_origin, "genc2c", "country.name", custom_match = eu_custom_codes)) %>%
+  ## destination
+  mutate(country_dest   = countrycode(country_dest,   "genc2c", "country.name", custom_match = eu_custom_codes))
+
+```
+
+#### Analysis
+```{r}
+
+# participants per year
+erasmus %>%
+  #filter(country_code_origin == "United Kingdom") %>%
+  group_by(year) %>%
+  summarise(n = sum(participants)) %>%
+  ggplot() +
+  geom_col(aes(n, year))
+
+```
+
+#### Palette
+```{r}
+library(showtext); showtext_auto()
+font_add_google("", "")
+font_add_google("", "")
+
+background <- 
+palette    <- 
+
+```
+
+### Data Input for Map
+```{r}
+
+erasmus %>%
+  filter(year == 2019) %>%
+  # filter out where origin and destination country are same
+  filter(city_origin != city_dest) %>%
+  group_by(country_origin, country_dest) %>%
+  summarise(n = sum(participants)) %>%
+  view()
+
+```
+
+### Map Inputs
+```{r}
+ 
+ne <- rnaturalearthdata::countries50 %>% sf::st_as_sf() %>% janitor::clean_names() %>% filter(continent == "Europe") %>% select(geounit)
+
+# join map and data
+sf::sf_use_s2(FALSE)
+erasmus_ne <- ne %>% right_join(erasmus, by = c("geounit" = "country_origin")) %>% st_crop(xmin = -25, xmax = 180, ymin = 25, ymax = 90)
+
+# transform to vang
+target_crs <- "+proj=vandg +lon_0=0 +x_0=0 +y_0=0 +R_A +a=6371000 +b=6371000 +units=m +no_defs"
+f_ne_trans <- st_transform(f_ne, crs = target_crs) 
+
+```
+
+#### Plotting
+```{r, fig.align="center", fig.width=6, fig.height=6, fig.cap="Figure: Here is a really important caption."}
+ggplot2::theme_set(theme_minimal())
+
+
+
+```
+
+#### Panel
+```{r}
+library(cowplot)
+
+# finalise panel with layered plotting or annotation
+ggdraw() +
+  draw_plot() +
+  draw_text() +
+  draw_text()
+
+```
+
+#### Saving
+```{r}
+
+ggsave(here::here(".png"), dpi = 360, height = 10, width = 15)
+
+```
+
+***
+
+R markdown allows to easily format your text. You can add [links](www.r-graph-gallery.com), write in **bold** or *italic*.
+
+Further formatting can be found [here](https://holtzy.github.io/Pimp-my-rmd/)
+
+***

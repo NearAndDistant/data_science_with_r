@@ -1,0 +1,187 @@
+---
+title: "Tidy Template"
+author: "NearAndDistant"
+date: "29/09/2021"
+output: html_document
+---
+
+## Renewable Regression 
+##### here: https://github.com/rfordatascience/tidytuesday/blob/master/data/2022/2022-05-03/readme.md
+
+# What is the inferential power to the price of renewables of time, cost and capacity
+
+#### Setup & Import
+```{r}
+library(tidyverse)
+
+# create driectory for new project
+dir.create(here::here("Week 18 : Renewables"))
+
+# Average cost for each type of power in dollars/MWh
+average_cost <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-05-03/average_cost.csv')
+
+# other
+capacity <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-05-03/capacity.csv')
+wind     <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-05-03/wind.csv')
+solar    <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-05-03/solar.csv')
+
+```
+
+#### Clean & Wrangle
+```{r}
+
+# create links in year
+wind_cln <- 
+  wind %>%
+  mutate(year = lubridate::year(date),
+         type = "wind") %>%
+  rename(price = "wind_mwh",
+         capacity = "wind_capacity")
+
+solar_cln <- 
+  solar %>%
+  mutate(year = lubridate::year(date),
+         type = "solar") %>%
+  rename(price  = "solar_mwh",
+         capacity = "solar_capacity")
+
+# rbind cleaned into one frame
+solar_wind_joined <- 
+  rbind(wind_cln, solar_cln)
+
+```
+
+```{r}
+
+# joining
+renew_cost_price <- 
+  avg_cost_cln %>%
+  left_join(solar_wind_joined, by = c("type", "year")) %>%
+  select(year, date, type, everything()) %>%
+  filter(type != "gas")
+
+```
+
+#### Analysis
+
+```{r}
+
+renew_cost_price %>%
+  pivot_longer(cols = c(cost, price), names_to = "financials", values_to = "value") %>%
+  filter(financials == "price") %>%
+  ggplot(aes(date, value)) +
+  geom_point(aes(color = financials), color = "grey", alpha = 0.6) + 
+  geom_smooth(data = renew_cost_price, aes(date, cost), 
+              method = "loess",
+              se = FALSE, color = "red") +
+  geom_smooth(method = "loess",
+              se = FALSE, color = "blue") +
+  geom_smooth(aes(date, capacity), method = "loess", color = "orange", se = FALSE, alpha = 0.6) + 
+  scale_y_continuous(labels = scales::dollar_format(), 
+                     breaks = seq(0,250,50)) + 
+  facet_wrap(~type) +
+  theme_minimal() +
+  theme(
+    axis.title = element_blank(),
+    #strip.text = element_blank(),
+    panel.grid = element_blank(),
+    panel.grid.major.y = element_line(color = "grey90", size = 0.5)
+  )
+
+```
+
+```{r}
+
+# clean
+avg_cost_cln <- 
+  average_cost %>%
+  pivot_longer(cols = c(gas_mwh:wind_mwh), names_to = "type", values_to = "cost") %>%
+  mutate(type = str_remove(type, "_mwh")) %>%
+  filter(year <2021)
+
+```
+
+```{r}
+
+avg_cost_cln %>%
+ggplot(aes(year, cost, color = type)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", se = FALSE)
+
+```
+
+
+```{r}
+
+mdl_avg_cost <- lm(cost ~ year + type + 0, data = avg_cost_cln)
+
+```
+
+#### Prediction Models
+
+```{r}
+
+explanatory_data <- expand_grid(year = 2021:2050, type = unique(avg_cost_cln$type))
+
+# apply model
+
+prediction_data <-
+	explanatory_data %>%
+  mutate(cost = predict(mdl_avg_cost, explanatory_data))
+
+# visualise model
+
+prediction_data %>%
+ggplot(aes(year, cost, color = type)) +
+  geom_point(alpha = 0.5) +
+  geom_line()
+  
+```
+
+
+
+#### Palette
+```{r}
+library(showtext); showtext_auto()
+font_add_google("", "")
+font_add_google("", "")
+
+background <- 
+palette    <- 
+
+```
+
+#### Plotting
+```{r, fig.align="center", fig.width=6, fig.height=6, fig.cap="Figure: Here is a really important caption."}
+ggplot2::theme_set(theme_mininal())
+
+
+
+```
+
+#### Panel
+```{r}
+library(cowplot)
+
+# finalise panel with layered plotting or annotation
+ggdraw() +
+  draw_plot() +
+  draw_text() +
+  draw_text()
+
+```
+
+#### Saving
+```{r}
+
+ggsave(here::here(".png"), dpi = 360, height = 10, width = 15)
+
+```
+
+***
+
+R markdown allows to easily format your text. You can add [links](www.r-graph-gallery.com), write in **bold** or *italic*.
+
+Further formatting can be found [here](https://holtzy.github.io/Pimp-my-rmd/)
+
+***

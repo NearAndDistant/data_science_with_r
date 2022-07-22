@@ -1,0 +1,45 @@
+---
+title: "datasauRus"
+author: "NearAndDistant"
+date: '2022-07-16'
+output: html_document
+---
+
+Silge: https://juliasilge.com/blog/datasaurus-multiclass/
+
+```{r}
+
+datasaurus <- 
+  datasaurus_dozen |>
+  mutate(label = str_replace(dataset, "_", " "),
+         label = str_to_title(label))
+
+```
+
+```{r}
+library(datasauRus)
+library(tidyverse)
+library(ggside)
+
+plot_datasaurus <-
+datasaurus |>
+  filter(dataset != "circle") |>
+  ggplot(aes(x, fill = dataset, color = dataset)) +
+  facet_wrap(~label, nrow = 1) +
+  scale_color_viridis_d(option = "viridis") +
+  scale_fill_viridis_d( option = "viridis") +
+  theme_minimal() +
+  theme(axis.title         = element_blank(),
+        panel.grid         = element_blank(),
+        panel.grid.major.y = element_line(color = "grey90"),
+        panel.background   = element_rect(fill = "white", color = "white"),
+        plot.background    = element_rect(fill = "white", color = "white"))
+
+point <- plot_datasaurus + geom_point(show.legend = FALSE)
+histo <- plot_datasaurus + geom_histogram(show.legend = FALSE) + theme()
+
+# save
+ggsave(plot = histo, here::here("Week 42 : datasauRus.png"), width = 20, height = 3, dpi = 360)
+
+```
+
