@@ -1,5 +1,9 @@
 # Data Science with R: Projects
 
+# Trade Union Membership in the UK [Code](https://github.com/NearAndDistant/ruk/tree/main/projects/Trade%20Unions)
+![Trade Unions - Regional Membership](https://user-images.githubusercontent.com/79040885/181939440-fde905b8-4dea-47d4-8756-412e9e6d1473.png)
+![Trade Unions - Age Distribution](https://user-images.githubusercontent.com/79040885/181939570-1b11e935-466b-4cf9-b7f6-99ebe4dfc172.png)
+
 # European Aviation Recovery since the Pandemic Started
 [Code](https://github.com/NearAndDistant/data_science_with_r/tree/main/Tidy_Tuesday/2022/Week%2028%20:%20European%20Flights)
 
