@@ -1,5 +1,12 @@
 # Data Science with R: Projects
 
+# Blackwater: Wastewater Treatment Plants (WWTP)
+[Code](https://github.com/NearAndDistant/data_science_with_r/tree/main/Tidy_Tuesday/2022/Week%2038%20:%20Hydro%20Wastewater%20Plants)
+
+In a sanitation context blackwater is the mixture of urine, feces and flushwater waste. Wastewater treatment plants (WWTPs) remove the pathogens, nutrients, organics, and other pollutants from wastewater. Regulatory thresholds suggest a minimum of 10% dilution of this wastewater before allowing it to runoff into rivers and other water systems.
+
+![Week 38 : wwtp_panel](https://user-images.githubusercontent.com/79040885/192096595-d48bc499-aa6f-4b28-945a-93737753e318.png)
+
 ## Trade Union Membership in the UK 
 [Code](https://github.com/NearAndDistant/ruk/tree/main/projects/Trade%20Unions)
 ![Trade Unions - Regional Membership](https://user-images.githubusercontent.com/79040885/181939440-fde905b8-4dea-47d4-8756-412e9e6d1473.png)
