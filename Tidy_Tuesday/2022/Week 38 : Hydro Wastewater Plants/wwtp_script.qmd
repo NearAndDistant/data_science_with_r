@@ -1,0 +1,121 @@
+---
+title: "Week 38 : Hydro Wastewater Plants"
+format: html
+editor: visual
+---
+
+## Hydro Wastewater Plants
+
+**Data:** [Macedo et al, 2022](https://figshare.com/articles/dataset/HydroWASTE_version_1_0/14847786/1)
+
+**Paper:** 'Distribution and characteristics of wastewater treatment plants within the global river network', [here](https://essd.copernicus.org/articles/14/559/2022/#section4)
+
+**Note:** WWTP = Waste Water Treatement Plant
+
+```{r}
+#| echo: false
+
+library(tidyverse)
+
+# import raw
+# tidy tuesday page, here: https://github.com/rfordatascience/tidytuesday/tree/master/data/2022/2022-09-20
+wwtp_raw <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-09-20/HydroWASTE_v10.csv')
+
+```
+
+df = dilusion factor
+
+"2533 (5.4%) of the plants had a DF value below 10, i.e., lower than the recommended threshold for environmental regulations (EMA, 2006)"
+
+```{r}
+
+# wrangle
+wwtp_wng <- 
+  wwtp_raw |>
+  janitor::clean_names() |>
+  mutate(df = df/100,
+         env_reg_threshhold = if_else(df <= 0.1, "lower", "within")) |>
+  mutate(df_cut = case_when(df  <0.02 ~ "<2%", 
+                            df >=0.02 & df <  0.04 ~ "2-4%",
+                            df >=0.04 & df <  0.06 ~ "4-6%",
+                            df >=0.06 & df <  0.08 ~ "6-8%",
+                            df >=0.08 & df <  0.1  ~ "8-10%"))
+
+```
+
+```{r}
+library(sf)
+
+# import world polygons map
+ne <- rnaturalearth::ne_countries(scale = "medium") %>% sf::st_as_sf() %>% janitor::clean_names() %>% select(country = geounit, continent)
+
+# join map and data
+sf::sf_use_s2(FALSE)
+f_ne <- ne |> right_join(wwtp_wng, by = "country") |> st_crop(xmin = -25, xmax = 50, ymin = 35, ymax = 72)
+
+```
+
+```{r}
+# split out without and outside threshold 
+wwtp_geo_nonreg <- f_ne |> filter(env_reg_threshhold == "lower") |> filter(!is.na(env_reg_threshhold)) |> filter(continent == "Europe") |> filter(country != "Russia") 
+
+wwtp_geo_nonreg_sum <-
+wwtp_geo_nonreg |>
+  count(country, df_cut) |>
+  group_by(country) |>
+  mutate(tot_n = sum(n)) |>
+  ungroup()
+
+# plot
+plot_wwtp_col <-
+wwtp_geo_nonreg_sum |>
+  ggplot(aes(n, fct_reorder(country, tot_n), fill = df_cut)) +
+  geom_col(show.legend = FALSE) +
+  scale_x_continuous(NULL, expand = c(0,0)) +
+  scale_y_discrete(NULL, expand = c(0,0)) +
+  rcartocolor::scale_fill_carto_d(palette = "SunsetDark") +
+  theme_minimal() +
+  theme(text = element_text(family = "Montserrat"),
+        axis.text = element_text(color = "black"),
+        panel.grid = element_blank(),
+        panel.grid.major.x = element_line(size = 0.1, color = "white"))
+
+```
+
+```{r}
+library(extrafont); font_import(pattern = "Montserrat")
+
+map_wwtp <-
+f_ne |>
+  filter(continent == "Europe") |> 
+  filter(country != "Russia") |>
+  filter(!is.na(env_reg_threshhold)) |> 
+  ggplot() +
+  geom_sf(aes(geometry = geometry), color = "grey80", fill = "#2C3E4C", size = 0.1) +
+  geom_point(aes(lon_out, lat_out), alpha = 0.1, size = 0.1, color = "#949398FF") +
+  geom_point(data = wwtp_geo_nonreg, aes(lon_out, lat_out, color = df_cut), alpha = 0.8, size = 1.2) +
+  guides(colour = guide_legend(override.aes = list(size = 6, alpha = 0.8))) +
+  labs(color = str_wrap("Waste Water Dilution Under European Regulatory Threshhold (Min. 10% Dilution)", 40)) +
+  rcartocolor::scale_color_carto_d(palette = "SunsetDark") + 
+  coord_sf() +
+  theme_void() +
+  theme(legend.position   = c(0.055,0.56),
+        legend.title      = element_text(family = "Montserrat SemiBold", color = "white"),
+        legend.text       = element_text(family = "Montserrat"         , color = "white"),
+        panel.background  = element_rect(fill = "#21242b", color = "#21242b"),
+        plot.background   = element_rect(fill = "#21242b", color = "#21242b"),
+        plot.margin       = margin(0,0,0,5, unit = "cm"))
+
+```
+
+```{r}
+library(cowplot)
+
+ggdraw(map_wwtp) + 
+  draw_plot(plot_wwtp_col, x = 0.1, y = 0.05, height = 0.4, width = 0.3) +
+  draw_text("Blackwater",  x = 0.1, y = 0.95, size = 20, family = "Montserrat SemiBold") + 
+  draw_text("Wastewater treatment plants (WWTPs) remove pathogens, nutrients, organics, and other pollutants from wastewater. Regulatory thresholds suggest a minimum of 10% dilution of this wastewater",
+            x = 0.1, y = 0.93, size = 12, family = "Montserrat")
+
+```
+
